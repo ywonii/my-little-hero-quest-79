@@ -45,26 +45,20 @@ const GamePlay = () => {
 
   const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
     try {
-      const response = await fetch('/api/adjust-scenario-difficulty', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('adjust-scenario-difficulty', {
+        body: {
           scenarios: scenarios.map(s => ({
             id: s.id,
             title: s.title,
             situation: s.situation,
-            options: s.options
+            options: s.options,
           })),
-          difficulty: difficultyLevel
-        }),
+          difficulty: difficultyLevel,
+        },
       });
 
-      if (!response.ok) throw new Error('Failed to adjust scenarios');
-
-      const data = await response.json();
-      return data.adjustedScenarios;
+      if (error) throw error;
+      return data?.adjustedScenarios ?? scenarios;
     } catch (error) {
       console.error('Error adjusting scenarios:', error);
       return scenarios; // 실패 시 원본 반환
