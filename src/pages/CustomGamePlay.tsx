@@ -43,6 +43,34 @@ const CustomGamePlay = () => {
     loadScenarios();
   }, [themeName]);
 
+  const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
+    try {
+      const response = await fetch('/api/adjust-scenario-difficulty', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scenarios: scenarios.map(s => ({
+            id: s.id,
+            title: s.title,
+            situation: s.situation,
+            options: s.options
+          })),
+          difficulty: difficultyLevel
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to adjust scenarios');
+
+      const data = await response.json();
+      return data.adjustedScenarios;
+    } catch (error) {
+      console.error('Error adjusting scenarios:', error);
+      return scenarios;
+    }
+  };
+
   const loadScenarios = async () => {
     try {
       setLoading(true);
@@ -84,7 +112,15 @@ const CustomGamePlay = () => {
 
       // 랜덤하게 섞기
       const shuffled = [...formattedScenarios].sort(() => Math.random() - 0.5);
-      setScenarios(shuffled);
+      
+      // 난이도에 맞게 시나리오 조정 (GPT API 사용)
+      toast({
+        title: "시나리오 조정 중...",
+        description: "난이도에 맞게 문장을 수정하고 있어요.",
+      });
+      
+      const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
+      setScenarios(adjustedScenarios || shuffled);
     } catch (error) {
       console.error('Error loading scenarios:', error);
       toast({
