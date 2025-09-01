@@ -35,8 +35,14 @@ const WrongAnswers = () => {
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
 
   useEffect(() => {
+    // localStorage에서 난이도 설정 확인
+    const savedLevel = localStorage.getItem('literacyLevel') as 'beginner' | 'intermediate' | 'advanced';
+    if (savedLevel) {
+      setDifficultyLevel(savedLevel);
+    }
     loadWrongAnswers();
   }, []);
 
@@ -210,9 +216,13 @@ const WrongAnswers = () => {
 
           {/* 문제 카드 */}
           <Card className="p-6 mb-6">
-            <h2 className="text-lg font-bold text-primary mb-3">{scenario.title}</h2>
+            <h2 className={`font-bold text-primary mb-3 ${difficultyLevel === 'beginner' ? 'text-lg' : difficultyLevel === 'intermediate' ? 'text-base' : 'text-sm'}`}>
+              {scenario.title}
+            </h2>
             <div className="bg-orange-50 p-4 rounded-lg mb-4">
-              <p className="text-foreground leading-relaxed">{scenario.situation}</p>
+              <p className={`text-foreground ${difficultyLevel === 'beginner' ? 'text-base leading-relaxed' : difficultyLevel === 'intermediate' ? 'text-sm leading-relaxed' : 'text-sm leading-normal'}`}>
+                {scenario.situation}
+              </p>
             </div>
             
             <div className="bg-gradient-to-br from-orange-100 to-red-100 p-8 rounded-lg mb-4 text-center">
@@ -252,7 +262,7 @@ const WrongAnswers = () => {
                     <span className="font-bold text-orange-600 flex-shrink-0">
                       {String.fromCharCode(97 + index)}.
                     </span>
-                    <span className="text-sm leading-relaxed">{option.text}</span>
+                    <span className={`${difficultyLevel === 'beginner' ? 'text-sm' : 'text-xs'} leading-relaxed`}>{option.text}</span>
                     {showResult && option.is_correct && (
                       <CheckCircle className="text-green-500 ml-auto flex-shrink-0" size={16} />
                     )}

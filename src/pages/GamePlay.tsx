@@ -29,11 +29,17 @@ const GamePlay = () => {
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
 
   // 세션 ID 생성 (임시로 timestamp 사용)
   const userSession = `session_${Date.now()}`;
 
   useEffect(() => {
+    // localStorage에서 난이도 설정 확인
+    const savedLevel = localStorage.getItem('literacyLevel') as 'beginner' | 'intermediate' | 'advanced';
+    if (savedLevel) {
+      setDifficultyLevel(savedLevel);
+    }
     loadScenarios();
   }, [theme]);
 
@@ -89,8 +95,8 @@ const GamePlay = () => {
   };
 
   const createSampleData = async () => {
-    // 테마별 샘플 시나리오 생성
-    const sampleScenarios = getSampleScenarios(theme || '');
+    // 테마별 샘플 시나리오 생성 (난이도에 따라)
+    const sampleScenarios = getSampleScenarios(theme || '', difficultyLevel);
     
     for (const scenario of sampleScenarios) {
       try {
@@ -241,9 +247,13 @@ const GamePlay = () => {
 
         {/* 문제 카드 */}
         <Card className="p-6 mb-6">
-          <h2 className="text-lg font-bold text-primary mb-3">{currentScenario.title}</h2>
+          <h2 className={`font-bold text-primary mb-3 ${difficultyLevel === 'beginner' ? 'text-lg' : difficultyLevel === 'intermediate' ? 'text-base' : 'text-sm'}`}>
+            {currentScenario.title}
+          </h2>
           <div className="bg-blue-50 p-4 rounded-lg mb-4">
-            <p className="text-foreground leading-relaxed">{currentScenario.situation}</p>
+            <p className={`text-foreground ${difficultyLevel === 'beginner' ? 'text-base leading-relaxed' : difficultyLevel === 'intermediate' ? 'text-sm leading-relaxed' : 'text-sm leading-normal'}`}>
+              {currentScenario.situation}
+            </p>
           </div>
           
           {/* 일러스트 영역 (임시) */}
@@ -328,18 +338,30 @@ const GamePlay = () => {
   );
 };
 
-// 테마별 샘플 시나리오 데이터
-const getSampleScenarios = (theme: string) => {
+// 테마별 샘플 시나리오 데이터 (난이도별)
+const getSampleScenarios = (theme: string, difficulty: 'beginner' | 'intermediate' | 'advanced') => {
   const scenarios = {
     school: [
       // 1-10
       {
-        title: "숙제를 안 해왔을 때",
-        situation: "지우는 숙제를 깜빡하고 못 해왔어요. 선생님이 숙제를 보여달라고 하셨어요.",
-        options: [
+        title: difficulty === 'beginner' ? "숙제 안 해왔을 때" : difficulty === 'intermediate' ? "숙제를 깜빡했을 때" : "과제 미완성 상황에서의 대처",
+        situation: difficulty === 'beginner' ? 
+          "숙제를 안 했어요. 선생님이 숙제를 보여달라고 해요." :
+          difficulty === 'intermediate' ?
+          "지우는 숙제를 깜빡하고 못 해왔어요. 선생님이 숙제를 보여달라고 하셨어요." :
+          "지우는 어제 밤 가족 행사로 인해 숙제를 완성하지 못했습니다. 선생님께서 과제 제출을 요청하셨을 때 어떻게 대응하는 것이 가장 적절할까요?",
+        options: difficulty === 'beginner' ? [
+          "친구 것을 베낀다.",
+          "선생님께 말씀드린다.", 
+          "거짓말을 한다."
+        ] : difficulty === 'intermediate' ? [
           "친구 숙제를 빌려서 그대로 베낀다.",
           "숙제를 못 한 이유를 솔직히 말씀드리고, 다음 시간에 해오겠다고 약속한다.",
           "숙제장을 집에 두고 왔다고 거짓말한다."
+        ] : [
+          "급하게 친구의 과제를 참고하여 유사하게 작성한 후 제출한다.",
+          "상황을 정직하게 설명하고 연장 기한을 요청하며, 책임감 있는 완성 계획을 제시한다.",
+          "다양한 핑계를 대며 제출을 미루고 상황을 모면하려고 시도한다."
         ],
         correctOption: 1
       },

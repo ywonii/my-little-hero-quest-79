@@ -29,11 +29,17 @@ const CustomGamePlay = () => {
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
 
   const userSession = `session_${Date.now()}`;
   const decodedThemeName = decodeURIComponent(themeName || '');
 
   useEffect(() => {
+    // localStorage에서 난이도 설정 확인
+    const savedLevel = localStorage.getItem('literacyLevel') as 'beginner' | 'intermediate' | 'advanced';
+    if (savedLevel) {
+      setDifficultyLevel(savedLevel);
+    }
     loadScenarios();
   }, [themeName]);
 
@@ -214,9 +220,13 @@ const CustomGamePlay = () => {
 
         {/* 문제 카드 */}
         <Card className="p-6 mb-6 border-purple-200">
-          <h2 className="text-lg font-bold text-primary mb-3">{currentScenario.title}</h2>
+          <h2 className={`font-bold text-primary mb-3 ${difficultyLevel === 'beginner' ? 'text-lg' : difficultyLevel === 'intermediate' ? 'text-base' : 'text-sm'}`}>
+            {currentScenario.title}
+          </h2>
           <div className="bg-purple-50 p-4 rounded-lg mb-4 border border-purple-100">
-            <p className="text-foreground leading-relaxed">{currentScenario.situation}</p>
+            <p className={`text-foreground ${difficultyLevel === 'beginner' ? 'text-base leading-relaxed' : difficultyLevel === 'intermediate' ? 'text-sm leading-relaxed' : 'text-sm leading-normal'}`}>
+              {currentScenario.situation}
+            </p>
           </div>
           
           {/* 일러스트 영역 */}
@@ -257,7 +267,7 @@ const CustomGamePlay = () => {
                   <span className="font-bold text-purple-600 flex-shrink-0">
                     {String.fromCharCode(97 + index)}.
                   </span>
-                  <span className="text-sm leading-relaxed">{option.text}</span>
+                  <span className={`${difficultyLevel === 'beginner' ? 'text-sm' : 'text-xs'} leading-relaxed`}>{option.text}</span>
                   {showResult && option.is_correct && (
                     <Star className="text-yellow-500 ml-auto flex-shrink-0" size={16} />
                   )}
