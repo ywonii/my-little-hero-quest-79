@@ -43,26 +43,41 @@ const CustomGamePlay = () => {
     loadScenarios();
   }, [themeName]);
 
-  const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('adjust-scenario-difficulty', {
-        body: {
-          scenarios: scenarios.map(s => ({
-            id: s.id,
-            title: s.title,
-            situation: s.situation,
-            options: s.options,
-          })),
-          difficulty: difficultyLevel,
-        },
-      });
+  const adjustScenariosDifficulty = (scenarios: Scenario[]) => {
+    return scenarios.map(scenario => {
+      const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
+      const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
+      const adjustedOptions = scenario.options.map(option => ({
+        ...option,
+        text: adjustTextByDifficulty(option.text, 'option')
+      }));
 
-      if (error) throw error;
-      return data?.adjustedScenarios ?? scenarios;
-    } catch (error) {
-      console.error('Error adjusting scenarios:', error);
-      return scenarios;
+      return {
+        ...scenario,
+        title: adjustedTitle,
+        situation: adjustedSituation,
+        options: adjustedOptions
+      };
+    });
+  };
+
+  const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
+    if (difficultyLevel === 'beginner') {
+      // 초급: 매우 간단한 문장으로 변경
+      if (type === 'title') {
+        return text.length > 8 ? text.substring(0, 8) + '...' : text;
+      } else if (type === 'situation') {
+        return text.replace(/습니다|하세요|했습니다/g, '해요').replace(/때문에|그래서/g, '');
+      } else {
+        return text.replace(/합니다|하세요/g, '해요');
+      }
+    } else if (difficultyLevel === 'advanced') {
+      // 고급: 더 복잡한 문장으로 변경
+      if (type === 'situation') {
+        return text + ' 이런 상황에서 어떻게 행동하는 것이 가장 적절할까요?';
+      }
     }
+    return text; // intermediate는 원본 유지
   };
 
   const loadScenarios = async () => {
@@ -107,14 +122,11 @@ const CustomGamePlay = () => {
       // 랜덤하게 섞기
       const shuffled = [...formattedScenarios].sort(() => Math.random() - 0.5);
       
-      // 난이도에 맞게 시나리오 조정 (GPT API 사용)
-      toast({
-        title: "시나리오 조정 중...",
-        description: "난이도에 맞게 문장을 수정하고 있어요.",
-      });
-      
-      const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
-      setScenarios(adjustedScenarios || shuffled);
+      // 난이도에 맞게 시나리오 조정
+      console.log('Current difficulty level:', difficultyLevel);
+      const adjustedScenarios = adjustScenariosDifficulty(shuffled);
+      console.log('Adjusted scenarios:', adjustedScenarios);
+      setScenarios(adjustedScenarios);
     } catch (error) {
       console.error('Error loading scenarios:', error);
       toast({
