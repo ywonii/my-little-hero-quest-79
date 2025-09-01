@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { BookOpen, Zap, Plus, RotateCcw } from 'lucide-react';
+import { BookOpen, Zap, Plus, RotateCcw, Settings } from 'lucide-react';
 
 const MainMenu = () => {
   const navigate = useNavigate();
@@ -42,7 +42,15 @@ const MainMenu = () => {
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 p-4">
       <div className="max-w-md mx-auto">
         {/* 헤더 */}
-        <div className="text-center py-8">
+        <div className="text-center py-8 relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/difficulty-settings')}
+            className="absolute top-4 right-4 rounded-full bg-white shadow-md"
+          >
+            <Settings size={20} />
+          </Button>
           <h1 className="text-3xl font-bold text-primary mb-2">
             🌟 똑똑한 선택왕 🌟
           </h1>

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import LiteracyTest from "./pages/LiteracyTest";
+import DifficultySettings from "./pages/DifficultySettings";
 import MainMenu from "./pages/MainMenu";
 import MainGame from "./pages/MainGame";
 import GamePlay from "./pages/GamePlay";
@@ -25,6 +26,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/literacy-test" element={<LiteracyTest />} />
+          <Route path="/difficulty-settings" element={<DifficultySettings />} />
           <Route path="/main-menu" element={<MainMenu />} />
           <Route path="/main-game" element={<MainGame />} />
           <Route path="/game/:theme" element={<GamePlay />} />

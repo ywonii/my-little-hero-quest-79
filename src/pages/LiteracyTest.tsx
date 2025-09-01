@@ -21,28 +21,28 @@ const LiteracyTest = () => {
   const [isComplete, setIsComplete] = useState(false);
 
   const questions: Question[] = [
-    // 1단계 (하 - 초등 1학년 수준)
+    // 1단계 (하 - 초등 1학년 수준) - 기본 어휘
     {
       id: 1,
-      question: "다음 중 '안녕하세요'와 같은 뜻인 것은?",
-      options: ["반갑습니다", "고맙습니다", "죄송합니다", "안녕히 가세요"],
-      correctAnswer: 0,
+      question: "'높다'의 반대말은 무엇인가요?",
+      options: ["넓다", "낮다", "좁다", "크다"],
+      correctAnswer: 1,
       level: 'easy'
     },
-    // 2단계 (중 - 초등 2학년 수준)
+    // 2단계 (중 - 초등 2학년 수준) - 문장 이해
     {
       id: 2,
-      question: "친구가 울고 있을 때 어떻게 해야 할까요?",
-      options: ["모른 척 한다", "웃으면서 본다", "괜찮냐고 물어본다", "다른 곳으로 간다"],
-      correctAnswer: 2,
+      question: "다음 문장에서 '누가' 밥을 먹었나요? '엄마가 맛있는 밥을 먹었습니다.'",
+      options: ["밥이", "엄마가", "맛이", "아빠가"],
+      correctAnswer: 1,
       level: 'medium'
     },
-    // 3단계 (상 - 초등 3학년 수준)
+    // 3단계 (상 - 초등 3학년 수준) - 문맥 이해
     {
       id: 3,
-      question: "다음 문장에서 틀린 부분은? '나는 어제 도서관에서 친구와 크게 이야기했다.'",
-      options: ["도서관은 조용히 해야 하는 곳이다", "친구와 이야기하면 안 된다", "어제는 도서관이 쉬는 날이다", "틀린 부분이 없다"],
-      correctAnswer: 0,
+      question: "다음 글을 읽고 물음에 답하세요. '하늘이 맑고 바람이 시원해서 소풍가기 좋은 날씨였다.' 이 날의 날씨는?",
+      options: ["비가 와서 나쁘다", "바람이 너무 세다", "소풍가기 좋다", "너무 더워서 힘들다"],
+      correctAnswer: 2,
       level: 'hard'
     }
   ];
@@ -97,10 +97,10 @@ const LiteracyTest = () => {
         <Card className="max-w-md mx-auto p-8 text-center">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-primary mb-4">
-            문해력 테스트 완료!
+            국어 실력 테스트 완료!
           </h2>
           <p className="text-muted-foreground mb-6">
-            이제 여러분에게 맞는 재미있는 게임을 즐길 수 있어요!
+            이제 여러분의 실력에 맞는 재미있는 게임을 즐길 수 있어요!
           </p>
           <Button 
             onClick={() => navigate('/main-menu')}
@@ -122,11 +122,11 @@ const LiteracyTest = () => {
           <div className="flex items-center justify-center gap-2 mb-4">
             <BookOpen className="text-primary" size={28} />
             <h1 className="text-2xl font-bold text-primary">
-              재미있는 준비 퀴즈
+              국어 실력 테스트
             </h1>
           </div>
           <p className="text-muted-foreground">
-            게임을 시작하기 전에 간단한 문제를 풀어보세요!
+            게임을 시작하기 전에 간단한 국어 문제를 풀어보세요!
           </p>
         </div>
 
