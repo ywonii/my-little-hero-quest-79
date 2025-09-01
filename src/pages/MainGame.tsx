@@ -60,7 +60,7 @@ const MainGame = () => {
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/main-menu')}
             className="rounded-full bg-white shadow-md"
           >
             <ArrowLeft size={20} />

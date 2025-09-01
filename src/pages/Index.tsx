@@ -1,7 +1,7 @@
-import MainMenu from './MainMenu';
+import MainMenuWrapper from './MainMenuWrapper';
 
 const Index = () => {
-  return <MainMenu />;
+  return <MainMenuWrapper />;
 };
 
 export default Index;

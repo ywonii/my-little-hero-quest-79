@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
+import LiteracyTest from "./pages/LiteracyTest";
+import MainMenu from "./pages/MainMenu";
 import MainGame from "./pages/MainGame";
 import GamePlay from "./pages/GamePlay";
 import AddScenario from "./pages/AddScenario";
@@ -22,6 +24,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/literacy-test" element={<LiteracyTest />} />
+          <Route path="/main-menu" element={<MainMenu />} />
           <Route path="/main-game" element={<MainGame />} />
           <Route path="/game/:theme" element={<GamePlay />} />
           <Route path="/add-scenario" element={<AddScenario />} />

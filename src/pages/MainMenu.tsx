@@ -59,7 +59,7 @@ const MainMenu = () => {
               <Card 
                 key={index}
                 className="p-6 hover:shadow-lg transition-all duration-300 border-2 cursor-pointer transform hover:scale-105"
-                onClick={() => navigate(item.path)}
+            onClick={() => navigate(item.path)}
               >
                 <div className="flex items-center gap-4">
                   <div 
