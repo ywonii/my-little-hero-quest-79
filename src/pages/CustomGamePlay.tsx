@@ -37,11 +37,17 @@ const CustomGamePlay = () => {
   useEffect(() => {
     // localStorage에서 난이도 설정 확인
     const savedLevel = localStorage.getItem('literacyLevel') as 'beginner' | 'intermediate' | 'advanced';
-    if (savedLevel) {
+    console.log('📚 Custom - Saved literacy level from localStorage:', savedLevel);
+    if (savedLevel && savedLevel !== difficultyLevel) {
       setDifficultyLevel(savedLevel);
+      console.log('📚 Custom - Setting difficulty level to:', savedLevel);
     }
+  }, [themeName]); // difficultyLevel 제거
+
+  useEffect(() => {
+    console.log('📚 Custom - Difficulty level changed, reloading scenarios:', difficultyLevel);
     loadScenarios();
-  }, [themeName]);
+  }, [difficultyLevel]); // 별도 useEffect로 분리
 
   const adjustScenariosDifficulty = (scenarios: Scenario[]) => {
     return scenarios.map(scenario => {
@@ -62,21 +68,54 @@ const CustomGamePlay = () => {
   };
 
   const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
+    console.log(`🔧 Custom - Adjusting ${type} for difficulty ${difficultyLevel}:`, text);
+    
     if (difficultyLevel === 'beginner') {
-      // 초급: 매우 간단한 문장으로 변경
+      // 초급: 매우 간단한 어휘와 짧은 문장
+      let adjusted = text;
+      
       if (type === 'title') {
-        return text.length > 8 ? text.substring(0, 8) + '...' : text;
+        adjusted = text.replace(/과의/g, '와')
+                      .replace(/상황에서의/g, '')
+                      .replace(/대처/g, '해결')
+                      .substring(0, 10);
       } else if (type === 'situation') {
-        return text.replace(/습니다|하세요|했습니다/g, '해요').replace(/때문에|그래서/g, '');
+        adjusted = text.replace(/습니다|하세요|했습니다/g, '해요')
+                      .replace(/어떻게 해야 할까요/g, '뭘 할까요')
+                      .replace(/상황에서/g, '때')
+                      .split('.')[0] + '.'; // 첫 번째 문장만
       } else {
-        return text.replace(/합니다|하세요/g, '해요');
+        adjusted = text.replace(/합니다|하세요/g, '해요')
+                      .replace(/말씀드린다/g, '말해요')
+                      .replace(/인정하고/g, '맞다고 하고')
+                      .substring(0, 15);
       }
+      
+      console.log(`🔧 Custom - Beginner adjusted:`, adjusted);
+      return adjusted;
+      
     } else if (difficultyLevel === 'advanced') {
-      // 고급: 더 복잡한 문장으로 변경
-      if (type === 'situation') {
-        return text + ' 이런 상황에서 어떻게 행동하는 것이 가장 적절할까요?';
+      // 고급: 더 복잡하고 구체적인 표현
+      let adjusted = text;
+      
+      if (type === 'title') {
+        adjusted = text + ' - 윤리적 판단';
+      } else if (type === 'situation') {
+        adjusted = text + ' 이러한 복잡한 상황에서 도덕적이고 합리적인 선택을 하기 위해서는 어떤 요소들을 고려해야 할까요?';
+      } else {
+        if (text.includes('사과한다')) {
+          adjusted = text.replace('사과한다', '진심 어린 사과와 함께 재발 방지를 위한 구체적인 계획을 제시한다');
+        }
+        if (text.includes('도움을 준다')) {
+          adjusted = text.replace('도움을 준다', '상황을 파악하고 적절한 수준의 도움을 제공한다');
+        }
       }
+      
+      console.log(`🔧 Custom - Advanced adjusted:`, adjusted);
+      return adjusted;
     }
+    
+    console.log(`🔧 Custom - Intermediate (unchanged):`, text);
     return text; // intermediate는 원본 유지
   };
 
