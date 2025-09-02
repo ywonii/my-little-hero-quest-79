@@ -49,22 +49,48 @@ const GamePlay = () => {
     loadScenarios();
   }, [difficultyLevel]); // 별도 useEffect로 분리
 
-  const adjustScenariosDifficulty = (scenarios: Scenario[]) => {
-    return scenarios.map(scenario => {
-      const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
-      const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
-      const adjustedOptions = scenario.options.map(option => ({
-        ...option,
-        text: adjustTextByDifficulty(option.text, 'option')
-      }));
+  const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
+    if (difficultyLevel === 'intermediate') {
+      return scenarios; // 중급은 원본 유지
+    }
 
-      return {
-        ...scenario,
-        title: adjustedTitle,
-        situation: adjustedSituation,
-        options: adjustedOptions
-      };
-    });
+    if (difficultyLevel === 'beginner') {
+      return scenarios.map(scenario => {
+        const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
+        const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
+        const adjustedOptions = scenario.options.map(option => ({
+          ...option,
+          text: adjustTextByDifficulty(option.text, 'option')
+        }));
+
+        return {
+          ...scenario,
+          title: adjustedTitle,
+          situation: adjustedSituation,
+          options: adjustedOptions
+        };
+      });
+    }
+
+    // 상급은 GPT API 사용
+    try {
+      const { data, error } = await supabase.functions.invoke('adjust-scenario-difficulty', {
+        body: {
+          scenarios: scenarios,
+          difficulty: 'advanced'
+        }
+      });
+
+      if (error) {
+        console.error('GPT API 호출 오류:', error);
+        return scenarios; // 오류 시 원본 반환
+      }
+
+      return data.adjustedScenarios || scenarios;
+    } catch (error) {
+      console.error('GPT API 호출 실패:', error);
+      return scenarios; // 실패 시 원본 반환
+    }
   };
 
   const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
@@ -174,7 +200,7 @@ const GamePlay = () => {
       
       // 난이도에 맞게 시나리오 조정
       console.log('Current difficulty level:', difficultyLevel);
-      const adjustedScenarios = adjustScenariosDifficulty(shuffled);
+      const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
       console.log('Adjusted scenarios:', adjustedScenarios);
       setScenarios(adjustedScenarios);
     } catch (error) {
