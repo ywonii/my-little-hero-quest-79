@@ -37,101 +37,32 @@ const CustomGamePlay = () => {
   useEffect(() => {
     // localStorage에서 난이도 설정 확인
     const savedLevel = localStorage.getItem('literacyLevel') as 'beginner' | 'intermediate' | 'advanced';
-    console.log('📚 Custom - Saved literacy level from localStorage:', savedLevel);
-    if (savedLevel && savedLevel !== difficultyLevel) {
+    if (savedLevel) {
       setDifficultyLevel(savedLevel);
-      console.log('📚 Custom - Setting difficulty level to:', savedLevel);
     }
-  }, [themeName]); // difficultyLevel 제거
-
-  useEffect(() => {
-    console.log('📚 Custom - Difficulty level changed, reloading scenarios:', difficultyLevel);
     loadScenarios();
-  }, [difficultyLevel]); // 별도 useEffect로 분리
+  }, [themeName]);
 
-  const adjustScenariosDifficulty = (scenarios: Scenario[]) => {
-    return scenarios.map(scenario => {
-      const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
-      const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
-      const adjustedOptions = scenario.options.map(option => ({
-        ...option,
-        text: adjustTextByDifficulty(option.text, 'option')
-      }));
+  const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('adjust-scenario-difficulty', {
+        body: {
+          scenarios: scenarios.map(s => ({
+            id: s.id,
+            title: s.title,
+            situation: s.situation,
+            options: s.options,
+          })),
+          difficulty: difficultyLevel,
+        },
+      });
 
-      return {
-        ...scenario,
-        title: adjustedTitle,
-        situation: adjustedSituation,
-        options: adjustedOptions
-      };
-    });
-  };
-
-  const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
-    console.log(`🔧 Custom - Adjusting ${type} for difficulty ${difficultyLevel}:`, text);
-    
-    if (difficultyLevel === 'beginner') {
-      // 초급: 짧고 간단한 문장 구조, 기본 어휘 사용
-      let adjusted = text;
-      
-      if (type === 'title') {
-        // 핵심만 남기고 단순화
-        adjusted = text.split(' - ')[0]  // 부제목 제거
-                      .replace(/상황에서의 대처/g, '해결하기')
-                      .replace(/괴롭힘/g, '힘든 일')
-                      .replace(/대처법/g, '방법');
-      } else if (type === 'situation') {
-        // 문장을 짧게 나누고 쉬운 단어 사용
-        adjusted = text.replace(/~습니다|~하셨습니다/g, '~어요')
-                      .replace(/어떻게 해야 할까요\?/g, '뭘 할까요?')
-                      .replace(/상황입니다/g, '일이에요')
-                      .replace(/놀림을 받고 있습니다/g, '힘들어해요')
-                      .replace(/괴롭힘을 당하고/g, '힘든 일을 당하고')
-                      .split('.').slice(0, 2).join('.'); // 처음 2문장만 유지
-      } else {
-        // 선택지도 단순하게
-        adjusted = text.replace(/선생님께 말씀드린다/g, '선생님께 말해요')
-                      .replace(/사과한다/g, '미안하다고 해요')
-                      .replace(/도움을 준다/g, '도와줘요')
-                      .replace(/무시한다/g, '모르는 척해요');
-      }
-      
-      console.log(`🔧 Custom - Beginner adjusted:`, adjusted);
-      return adjusted;
-      
-    } else if (difficultyLevel === 'advanced') {
-      // 고급: 더 길고 구체적인 문장, 복잡한 어휘 사용
-      let adjusted = text;
-      
-      if (type === 'title') {
-        // 구체적인 상황 설명 추가
-        if (!text.includes(' - ')) {
-          adjusted = text + ' - 상황 분석 및 해결 방안';
-        }
-      } else if (type === 'situation') {
-        // 배경 정보와 세부 사항 추가
-        if (!text.includes('이러한 상황에서')) {
-          adjusted = text + ' 이러한 복잡한 상황에서 여러 요소를 고려하여 가장 적절한 대응 방법을 선택해야 합니다.';
-        }
-      } else {
-        // 선택지에 구체적인 행동 방법 추가
-        if (text.includes('선생님께 말한다')) {
-          adjusted = text.replace('선생님께 말한다', '상황을 정확히 파악하고 담당 선생님께 구체적으로 보고한다');
-        }
-        if (text.includes('사과한다')) {
-          adjusted = text.replace('사과한다', '진심으로 사과하고 앞으로 주의하겠다고 약속한다');
-        }
-        if (text.includes('도움을 준다')) {
-          adjusted = text.replace('도움을 준다', '상대방의 입장을 이해하고 적절한 도움을 제공한다');
-        }
-      }
-      
-      console.log(`🔧 Custom - Advanced adjusted:`, adjusted);
-      return adjusted;
+      if (error) throw error;
+      return data?.adjustedScenarios ?? scenarios;
+    } catch (error) {
+      console.error('Error adjusting scenarios:', error);
+      return scenarios;
     }
-    
-    console.log(`🔧 Custom - Intermediate (unchanged):`, text);
-    return text; // intermediate는 원본 유지
   };
 
   const loadScenarios = async () => {
@@ -176,11 +107,14 @@ const CustomGamePlay = () => {
       // 랜덤하게 섞기
       const shuffled = [...formattedScenarios].sort(() => Math.random() - 0.5);
       
-      // 난이도에 맞게 시나리오 조정
-      console.log('Current difficulty level:', difficultyLevel);
-      const adjustedScenarios = adjustScenariosDifficulty(shuffled);
-      console.log('Adjusted scenarios:', adjustedScenarios);
-      setScenarios(adjustedScenarios);
+      // 난이도에 맞게 시나리오 조정 (GPT API 사용)
+      toast({
+        title: "시나리오 조정 중...",
+        description: "난이도에 맞게 문장을 수정하고 있어요.",
+      });
+      
+      const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
+      setScenarios(adjustedScenarios || shuffled);
     } catch (error) {
       console.error('Error loading scenarios:', error);
       toast({
