@@ -106,15 +106,15 @@ const GamePlay = () => {
           adjusted = text.replace('해결하기', '상황에서의 효과적인 문제해결 방안');
         }
       } else if (type === 'situation') {
-        // 구체적인 상황 설명 추가
+        // 이야기 형식으로 구체적인 장면 추가
         if (text.includes('친구')) {
-          adjusted = text + ' 주변에는 다른 아이들도 있고, 선생님이 멀리 계십니다.';
+          adjusted = text + ' 민호가 눈물을 글썽이며 혼자 서 있고, 다른 친구들이 웅성거리며 지켜보고 있습니다.';
         } else if (text.includes('수업') || text.includes('교실')) {
-          adjusted = text + ' 교실 안에는 30명의 학생들이 있고, 모두가 이 상황을 지켜보고 있습니다.';
+          adjusted = text + ' 선생님이 칠판에 글씨를 쓰고 계시고, 옆 친구가 조용히 속삭입니다.';
         } else if (text.includes('놀이터') || text.includes('운동장')) {
-          adjusted = text + ' 놀이터에는 여러 학년 학생들이 함께 놀고 있고, 안전 도우미 선생님이 순찰을 돌고 계십니다.';
+          adjusted = text + ' 미끄럼틀 옆에서 1학년 동생이 무릎을 부여잡고 엉엉 울고 있습니다.';
         } else {
-          adjusted = text + ' 이 상황은 학교에서 자주 일어나는 일이며, 주변에 도움을 요청할 수 있는 어른들이 있습니다.';
+          adjusted = text + ' 복도에서 발걸음 소리가 들리고, 담임 선생님 교무실 불이 켜져 있습니다.';
         }
       } else {
         // 구체적이고 정확한 표현으로 변경
