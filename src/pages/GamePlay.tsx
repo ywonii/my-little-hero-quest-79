@@ -49,106 +49,81 @@ const GamePlay = () => {
     loadScenarios();
   }, [difficultyLevel]); // 별도 useEffect로 분리
 
-  const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
-    if (difficultyLevel === 'intermediate') {
-      return scenarios; // 중급은 원본 유지
-    }
+  const adjustScenariosDifficulty = (scenarios: Scenario[]) => {
+    return scenarios.map(scenario => {
+      const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
+      const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
+      const adjustedOptions = scenario.options.map(option => ({
+        ...option,
+        text: adjustTextByDifficulty(option.text, 'option')
+      }));
 
-    if (difficultyLevel === 'beginner') {
-      return scenarios.map(scenario => {
-        const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
-        const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
-        const adjustedOptions = scenario.options.map(option => ({
-          ...option,
-          text: adjustTextByDifficulty(option.text, 'option')
-        }));
-
-        return {
-          ...scenario,
-          title: adjustedTitle,
-          situation: adjustedSituation,
-          options: adjustedOptions
-        };
-      });
-    }
-
-    // 상급은 GPT API 사용
-    try {
-      const { data, error } = await supabase.functions.invoke('adjust-scenario-difficulty', {
-        body: {
-          scenarios: scenarios,
-          difficulty: 'advanced'
-        }
-      });
-
-      if (error) {
-        console.error('GPT API 호출 오류:', error);
-        return scenarios; // 오류 시 원본 반환
-      }
-
-      return data.adjustedScenarios || scenarios;
-    } catch (error) {
-      console.error('GPT API 호출 실패:', error);
-      return scenarios; // 실패 시 원본 반환
-    }
+      return {
+        ...scenario,
+        title: adjustedTitle,
+        situation: adjustedSituation,
+        options: adjustedOptions
+      };
+    });
   };
 
   const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
     console.log(`🔧 Adjusting ${type} for difficulty ${difficultyLevel}:`, text);
     
     if (difficultyLevel === 'beginner') {
-      // 하: 주어 + 서술어 (가장 간단한 구조)
+      // 초급: 짧고 간단한 문장 구조, 기본 어휘 사용
       let adjusted = text;
       
       if (type === 'title') {
-        adjusted = text.split(' ')[0] + ' 해결하기';
+        // 핵심만 남기고 단순화
+        adjusted = text.split(' - ')[0]  // 부제목 제거
+                      .replace(/상황에서의 대처/g, '해결하기')
+                      .replace(/괴롭힘/g, '힘든 일')
+                      .replace(/대처법/g, '방법');
       } else if (type === 'situation') {
-        // 핵심만 남기고 간단한 문장으로
-        const sentences = text.split('.').filter(s => s.trim());
-        if (sentences.length > 0) {
-          adjusted = sentences[0]
-            .replace(/~습니다|~하셨습니다/g, '~어요')
-            .replace(/어떻게 해야 할까요\?/g, '뭘 할까요?')
-            .replace(/상황입니다/g, '일이에요') + '.';
-        }
+        // 문장을 짧게 나누고 쉬운 단어 사용
+        adjusted = text.replace(/~습니다|~하셨습니다/g, '~어요')
+                      .replace(/어떻게 해야 할까요\?/g, '뭘 할까요?')
+                      .replace(/상황입니다/g, '일이에요')
+                      .replace(/놀림을 받고 있습니다/g, '힘들어해요')
+                      .replace(/괴롭힘을 당하고/g, '힘든 일을 당하고')
+                      .split('.').slice(0, 2).join('.'); // 처음 2문장만 유지
       } else {
-        adjusted = text
-          .replace(/선생님께 말씀드린다/g, '선생님께 말해요')
-          .replace(/사과한다/g, '미안해요')
-          .replace(/도움을 준다/g, '도와줘요')
-          .replace(/무시한다/g, '모르는 척해요')
-          .replace(/한다|드린다/g, '해요');
+        // 선택지도 단순하게
+        adjusted = text.replace(/선생님께 말씀드린다/g, '선생님께 말해요')
+                      .replace(/사과한다/g, '미안하다고 해요')
+                      .replace(/도움을 준다/g, '도와줘요')
+                      .replace(/무시한다/g, '모르는 척해요');
       }
       
       console.log(`🔧 Beginner adjusted:`, adjusted);
       return adjusted;
       
     } else if (difficultyLevel === 'advanced') {
-      // 상: 주어 + 서술어 + 부사어 + 목적어 + 보어 (복잡한 어휘와 수식어)
+      // 고급: 더 길고 구체적인 문장, 복잡한 어휘 사용
       let adjusted = text;
       
       if (type === 'title') {
-        if (!text.includes('상황에서')) {
-          adjusted = text.replace('해결하기', '상황에서의 효과적인 문제해결 방안');
+        // 구체적인 상황 설명 추가
+        if (!text.includes(' - ')) {
+          adjusted = text + ' - 상황 분석 및 해결 방안';
         }
       } else if (type === 'situation') {
-        // 이야기 형식으로 구체적인 장면 추가
-        if (text.includes('친구')) {
-          adjusted = text + ' 민호가 눈물을 글썽이며 혼자 서 있고, 다른 친구들이 웅성거리며 지켜보고 있습니다.';
-        } else if (text.includes('수업') || text.includes('교실')) {
-          adjusted = text + ' 선생님이 칠판에 글씨를 쓰고 계시고, 옆 친구가 조용히 속삭입니다.';
-        } else if (text.includes('놀이터') || text.includes('운동장')) {
-          adjusted = text + ' 미끄럼틀 옆에서 1학년 동생이 무릎을 부여잡고 엉엉 울고 있습니다.';
-        } else {
-          adjusted = text + ' 복도에서 발걸음 소리가 들리고, 담임 선생님 교무실 불이 켜져 있습니다.';
+        // 배경 정보와 세부 사항 추가
+        if (!text.includes('이러한 상황에서')) {
+          adjusted = text + ' 이러한 복잡한 상황에서 여러 요소를 고려하여 가장 적절한 대응 방법을 선택해야 합니다.';
         }
       } else {
-        // 구체적이고 정확한 표현으로 변경
-        adjusted = text
-          .replace(/선생님께 말해요/g, '담당 선생님께 정확한 상황을 상세히 보고드려요')
-          .replace(/미안해요/g, '진심으로 사과하며 재발 방지를 약속드려요')
-          .replace(/도와줘요/g, '상대방의 상황을 충분히 이해하고 적절한 도움을 제공해요')
-          .replace(/모르는 척해요/g, '상황을 면밀히 관찰하되 직접적인 개입은 피해요');
+        // 선택지에 구체적인 행동 방법 추가
+        if (text.includes('선생님께 말한다')) {
+          adjusted = text.replace('선생님께 말한다', '상황을 정확히 파악하고 담당 선생님께 구체적으로 보고한다');
+        }
+        if (text.includes('사과한다')) {
+          adjusted = text.replace('사과한다', '진심으로 사과하고 앞으로 주의하겠다고 약속한다');
+        }
+        if (text.includes('도움을 준다')) {
+          adjusted = text.replace('도움을 준다', '상대방의 입장을 이해하고 적절한 도움을 제공한다');
+        }
       }
       
       console.log(`🔧 Advanced adjusted:`, adjusted);
@@ -200,7 +175,7 @@ const GamePlay = () => {
       
       // 난이도에 맞게 시나리오 조정
       console.log('Current difficulty level:', difficultyLevel);
-      const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
+      const adjustedScenarios = adjustScenariosDifficulty(shuffled);
       console.log('Adjusted scenarios:', adjustedScenarios);
       setScenarios(adjustedScenarios);
     } catch (error) {
