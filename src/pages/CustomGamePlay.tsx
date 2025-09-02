@@ -71,42 +71,58 @@ const CustomGamePlay = () => {
     console.log(`🔧 Custom - Adjusting ${type} for difficulty ${difficultyLevel}:`, text);
     
     if (difficultyLevel === 'beginner') {
-      // 초급: 간단한 어휘로 변경하되 문장 자르지 않음
+      // 초급: 짧고 간단한 문장 구조, 기본 어휘 사용
       let adjusted = text;
       
       if (type === 'title') {
-        adjusted = text.replace(/괴롭힘을 당할 때/g, '힘들어할 때')
-                      .replace(/상황에서의/g, '')
-                      .replace(/대처/g, '해결하기');
+        // 핵심만 남기고 단순화
+        adjusted = text.split(' - ')[0]  // 부제목 제거
+                      .replace(/상황에서의 대처/g, '해결하기')
+                      .replace(/괴롭힘/g, '힘든 일')
+                      .replace(/대처법/g, '방법');
       } else if (type === 'situation') {
-        adjusted = text.replace(/습니다|하셨습니다/g, '어요')
-                      .replace(/하세요/g, '해요')
-                      .replace(/어떻게 해야 할까요/g, '뭘 해야 할까요')
-                      .replace(/놀림을 받고/g, '괴롭힘을 당하고');
+        // 문장을 짧게 나누고 쉬운 단어 사용
+        adjusted = text.replace(/~습니다|~하셨습니다/g, '~어요')
+                      .replace(/어떻게 해야 할까요\?/g, '뭘 할까요?')
+                      .replace(/상황입니다/g, '일이에요')
+                      .replace(/놀림을 받고 있습니다/g, '힘들어해요')
+                      .replace(/괴롭힘을 당하고/g, '힘든 일을 당하고')
+                      .split('.').slice(0, 2).join('.'); // 처음 2문장만 유지
       } else {
-        adjusted = text.replace(/말씀드리고/g, '말하고')
-                      .replace(/약속한다/g, '약속해요')
-                      .replace(/거짓말한다/g, '거짓말해요')
-                      .replace(/말씀드린다/g, '말해요');
+        // 선택지도 단순하게
+        adjusted = text.replace(/선생님께 말씀드린다/g, '선생님께 말해요')
+                      .replace(/사과한다/g, '미안하다고 해요')
+                      .replace(/도움을 준다/g, '도와줘요')
+                      .replace(/무시한다/g, '모르는 척해요');
       }
       
       console.log(`🔧 Custom - Beginner adjusted:`, adjusted);
       return adjusted;
       
     } else if (difficultyLevel === 'advanced') {
-      // 고급: 간결하면서 정확한 표현
+      // 고급: 더 길고 구체적인 문장, 복잡한 어휘 사용
       let adjusted = text;
       
       if (type === 'title') {
-        adjusted = text + ' - 윤리적 사고';
-      } else if (type === 'situation') {
-        adjusted = text + ' 상황을 신중하게 판단하여 올바른 선택을 해보세요.';
-      } else {
-        if (text.includes('말씀드리고')) {
-          adjusted = text.replace('말씀드리고', '솔직하게 설명하고');
+        // 구체적인 상황 설명 추가
+        if (!text.includes(' - ')) {
+          adjusted = text + ' - 상황 분석 및 해결 방안';
         }
-        if (text.includes('선생님께 말씀드린다')) {
-          adjusted = text.replace('선생님께 말씀드린다', '담당 선생님께 상황을 보고한다');
+      } else if (type === 'situation') {
+        // 배경 정보와 세부 사항 추가
+        if (!text.includes('이러한 상황에서')) {
+          adjusted = text + ' 이러한 복잡한 상황에서 여러 요소를 고려하여 가장 적절한 대응 방법을 선택해야 합니다.';
+        }
+      } else {
+        // 선택지에 구체적인 행동 방법 추가
+        if (text.includes('선생님께 말한다')) {
+          adjusted = text.replace('선생님께 말한다', '상황을 정확히 파악하고 담당 선생님께 구체적으로 보고한다');
+        }
+        if (text.includes('사과한다')) {
+          adjusted = text.replace('사과한다', '진심으로 사과하고 앞으로 주의하겠다고 약속한다');
+        }
+        if (text.includes('도움을 준다')) {
+          adjusted = text.replace('도움을 준다', '상대방의 입장을 이해하고 적절한 도움을 제공한다');
         }
       }
       
