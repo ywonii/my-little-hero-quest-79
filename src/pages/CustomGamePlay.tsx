@@ -106,8 +106,15 @@ const CustomGamePlay = () => {
           adjusted = text.replace('해결하기', '상황에서의 효과적인 문제해결 방안');
         }
       } else if (type === 'situation') {
-        if (!text.includes('복잡한') && !text.includes('신중하게')) {
-          adjusted = text.replace('.', '. 이러한 복잡한 상황에서 신중하게 판단해야 합니다.');
+        // 구체적인 상황 설명 추가
+        if (text.includes('친구')) {
+          adjusted = text + ' 주변에는 다른 아이들도 있고, 선생님이 멀리 계십니다.';
+        } else if (text.includes('수업') || text.includes('교실')) {
+          adjusted = text + ' 교실 안에는 30명의 학생들이 있고, 모두가 이 상황을 지켜보고 있습니다.';
+        } else if (text.includes('놀이터') || text.includes('운동장')) {
+          adjusted = text + ' 놀이터에는 여러 학년 학생들이 함께 놀고 있고, 안전 도우미 선생님이 순찰을 돌고 계십니다.';
+        } else {
+          adjusted = text + ' 이 상황은 학교에서 자주 일어나는 일이며, 주변에 도움을 요청할 수 있는 어른들이 있습니다.';
         }
       } else {
         // 구체적이고 정확한 표현으로 변경
