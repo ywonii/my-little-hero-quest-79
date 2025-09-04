@@ -17,24 +17,18 @@ export type Database = {
       custom_themes: {
         Row: {
           created_at: string
-          description: string | null
           id: string
-          theme_name: string
-          updated_at: string
+          name: string
         }
         Insert: {
           created_at?: string
-          description?: string | null
           id?: string
-          theme_name: string
-          updated_at?: string
+          name: string
         }
         Update: {
           created_at?: string
-          description?: string | null
           id?: string
-          theme_name?: string
-          updated_at?: string
+          name?: string
         }
         Relationships: []
       }
@@ -43,24 +37,21 @@ export type Database = {
           created_at: string
           id: string
           is_correct: boolean
-          option_order: number
-          scenario_id: string
+          scenario_id: string | null
           text: string
         }
         Insert: {
           created_at?: string
           id?: string
           is_correct?: boolean
-          option_order: number
-          scenario_id: string
+          scenario_id?: string | null
           text: string
         }
         Update: {
           created_at?: string
           id?: string
           is_correct?: boolean
-          option_order?: number
-          scenario_id?: string
+          scenario_id?: string | null
           text?: string
         }
         Relationships: [
@@ -75,106 +66,32 @@ export type Database = {
       }
       scenarios: {
         Row: {
-          category: string | null
           created_at: string
-          difficulty_level: number | null
           id: string
           situation: string
-          theme: string | null
+          theme_id: string | null
           title: string
-          updated_at: string
         }
         Insert: {
-          category?: string | null
           created_at?: string
-          difficulty_level?: number | null
           id?: string
           situation: string
-          theme?: string | null
+          theme_id?: string | null
           title: string
-          updated_at?: string
         }
         Update: {
-          category?: string | null
           created_at?: string
-          difficulty_level?: number | null
           id?: string
           situation?: string
-          theme?: string | null
+          theme_id?: string | null
           title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      user_progress: {
-        Row: {
-          attempts: number
-          completed_at: string | null
-          created_at: string
-          id: string
-          is_correct: boolean
-          scenario_id: string
-          user_session: string
-        }
-        Insert: {
-          attempts?: number
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          is_correct?: boolean
-          scenario_id: string
-          user_session: string
-        }
-        Update: {
-          attempts?: number
-          completed_at?: string | null
-          created_at?: string
-          id?: string
-          is_correct?: boolean
-          scenario_id?: string
-          user_session?: string
         }
         Relationships: [
           {
-            foreignKeyName: "user_progress_scenario_id_fkey"
-            columns: ["scenario_id"]
+            foreignKeyName: "scenarios_theme_id_fkey"
+            columns: ["theme_id"]
             isOneToOne: false
-            referencedRelation: "scenarios"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      wrong_answers: {
-        Row: {
-          correct_count: number
-          created_at: string
-          id: string
-          scenario_id: string
-          updated_at: string
-          user_session: string
-        }
-        Insert: {
-          correct_count?: number
-          created_at?: string
-          id?: string
-          scenario_id: string
-          updated_at?: string
-          user_session: string
-        }
-        Update: {
-          correct_count?: number
-          created_at?: string
-          id?: string
-          scenario_id?: string
-          updated_at?: string
-          user_session?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "wrong_answers_scenario_id_fkey"
-            columns: ["scenario_id"]
-            isOneToOne: false
-            referencedRelation: "scenarios"
+            referencedRelation: "custom_themes"
             referencedColumns: ["id"]
           },
         ]
