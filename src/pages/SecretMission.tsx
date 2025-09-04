@@ -8,8 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 interface CustomTheme {
   id: string;
-  theme_name: string;
-  description: string;
+  name: string;
   created_at: string;
   scenario_count?: number;
 }
@@ -45,7 +44,7 @@ const SecretMission = () => {
               .from('scenarios')
               .select('*', { count: 'exact', head: true })
               .eq('category', 'custom')
-              .eq('theme', theme.theme_name);
+              .eq('theme', theme.name);
 
             return {
               ...theme,
@@ -135,7 +134,7 @@ const SecretMission = () => {
               <Card 
                 key={theme.id}
                 className="p-4 hover:shadow-lg transition-all duration-300 border-2 cursor-pointer transform hover:scale-105"
-                onClick={() => navigate(`/custom-game/${encodeURIComponent(theme.theme_name)}`)}
+                onClick={() => navigate(`/custom-game/${encodeURIComponent(theme.name)}`)}
               >
                 <div className="flex items-start gap-4">
                   <div className="p-3 rounded-full bg-purple-500 text-white flex-shrink-0">
@@ -144,7 +143,7 @@ const SecretMission = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="text-lg font-bold text-foreground truncate">
-                        {theme.theme_name}
+                        {theme.name}
                       </h3>
                       <span className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex-shrink-0">
                         {theme.scenario_count}문제

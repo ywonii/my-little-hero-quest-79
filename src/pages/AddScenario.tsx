@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -13,6 +13,7 @@ const AddScenario = () => {
   
   const [problemDescription, setProblemDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const handleGenerate = async () => {
     if (!problemDescription.trim()) {
@@ -53,6 +54,36 @@ const AddScenario = () => {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleRegenerateScenarios = async () => {
+    setIsRegenerating(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('regenerate-scenarios', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "시나리오 재생성 완료! 🔄",
+          description: `${data.count}개의 새로운 메인 시나리오가 생성되었습니다.`,
+        });
+      } else {
+        throw new Error(data.error || '알 수 없는 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('Error regenerating scenarios:', error);
+      toast({
+        title: "재생성 실패",
+        description: "시나리오 재생성 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -110,7 +141,7 @@ const AddScenario = () => {
           <Button 
             onClick={handleGenerate}
             disabled={isGenerating || !problemDescription.trim()}
-            className="w-full py-3 text-lg font-bold"
+            className="w-full py-3 text-lg font-bold mb-4"
             size="lg"
           >
             {isGenerating ? (
@@ -125,6 +156,32 @@ const AddScenario = () => {
               </>
             )}
           </Button>
+
+          <div className="border-t pt-4">
+            <h4 className="font-bold text-center mb-3">🔄 메인 시나리오 재생성</h4>
+            <p className="text-sm text-muted-foreground text-center mb-4">
+              기존 메인 시나리오를 새로운 내용으로 재생성합니다
+            </p>
+            <Button 
+              onClick={handleRegenerateScenarios}
+              disabled={isRegenerating}
+              variant="outline"
+              className="w-full"
+              size="lg"
+            >
+              {isRegenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  재생성 중...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-5 w-5" />
+                  메인 시나리오 재생성
+                </>
+              )}
+            </Button>
+          </div>
         </Card>
 
         {/* 예시 카드 */}

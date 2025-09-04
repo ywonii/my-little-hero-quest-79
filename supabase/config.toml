@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-scenarios]
 verify_jwt = false
+
+[functions.regenerate-scenarios]
+verify_jwt = false

@@ -105,6 +105,73 @@ export type Database = {
           },
         ]
       }
+      user_progress: {
+        Row: {
+          attempts: number
+          completed_at: string
+          id: string
+          is_correct: boolean
+          scenario_id: string | null
+          user_session: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string
+          id?: string
+          is_correct: boolean
+          scenario_id?: string | null
+          user_session: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string
+          id?: string
+          is_correct?: boolean
+          scenario_id?: string | null
+          user_session?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wrong_answers: {
+        Row: {
+          correct_count: number
+          created_at: string
+          id: string
+          scenario_id: string | null
+          user_session: string
+        }
+        Insert: {
+          correct_count?: number
+          created_at?: string
+          id?: string
+          scenario_id?: string | null
+          user_session: string
+        }
+        Update: {
+          correct_count?: number
+          created_at?: string
+          id?: string
+          scenario_id?: string | null
+          user_session?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wrong_answers_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
