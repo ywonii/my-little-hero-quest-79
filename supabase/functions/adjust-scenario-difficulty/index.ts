@@ -18,6 +18,7 @@ serve(async (req) => {
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
+      console.error('OPENAI_API_KEY environment variable is not set');
       throw new Error('OpenAI API Key is not set');
     }
 

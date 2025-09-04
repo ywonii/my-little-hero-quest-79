@@ -7,8 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = 'https://xufneikpvakgomsncqsp.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Zm5laWtwdmFrZ29tc25jcXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMjkyOTUsImV4cCI6MjA3MDkwNTI5NX0.klkp0MzI6ZnEiVuW8tgydZNzszJ_NYJTOzmBWAgUQ20';
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -19,9 +19,16 @@ serve(async (req) => {
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
+      console.error('OPENAI_API_KEY environment variable is not set');
       throw new Error('OpenAI API Key is not set');
     }
 
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase URL or Service Role Key is not set');
+      throw new Error('Supabase URL or Service Role Key is not set');
+    }
+
+    console.log('Environment check passed - API key and Supabase config available');
     const supabase = createClient(supabaseUrl, supabaseKey);
     const { problemDescription } = await req.json();
 
