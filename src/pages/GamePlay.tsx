@@ -65,124 +65,107 @@ const GamePlay = () => {
       return JSON.parse(cachedScenarios);
     }
 
-    // API를 통해 시나리오 난이도 조정
-    try {
-      console.log('📚 Calling adjust-scenario-difficulty API', { difficulty, scenarioCount: scenarios.length });
-      toast({ title: "시나리오를 준비 중입니다...", description: "잠시만 기다려주세요." });
-      
-      const { data, error } = await supabase.functions.invoke('adjust-scenario-difficulty', {
-        body: { scenarios, difficulty }
-      });
+    // API 호출 없이 프런트엔드에서 이야기 형식으로 난이도 조정
+    const adjusted = scenarios.map(scenario => {
+      const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
+      const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
+      const adjustedOptions = scenario.options.map(option => ({
+        ...option,
+        text: adjustTextByDifficulty(option.text, 'option')
+      }));
 
-      if (error) {
-        console.error('Error adjusting scenarios:', error);
-        throw error;
-      }
+      return {
+        ...scenario,
+        title: adjustedTitle,
+        situation: adjustedSituation,
+        options: adjustedOptions
+      };
+    });
 
-      if (data.success) {
-        // 조정된 시나리오를 세션 스토리지에 저장
-        sessionStorage.setItem(sessionKey, JSON.stringify(data.adjustedScenarios));
-        toast({ 
-          title: "준비 완료!", 
-          description: `${difficulty === 'beginner' ? '하급' : '상급'} 난이도로 설정되었습니다.` 
-        });
-        console.log('📚 Successfully adjusted scenarios via API');
-        return data.adjustedScenarios;
-      } else {
-        throw new Error(data.error || 'Unknown error');
-      }
-    } catch (error) {
-      console.error('Error calling adjust-scenario-difficulty:', error);
-      toast({ 
-        title: "API 오류", 
-        description: "기본 텍스트 조정을 사용합니다.",
-        variant: "destructive" 
-      });
-      
-      // API 실패 시 기존 로직 사용
-      return scenarios.map(scenario => {
-        const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
-        const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
-        const adjustedOptions = scenario.options.map(option => ({
-          ...option,
-          text: adjustTextByDifficulty(option.text, 'option')
-        }));
-
-        return {
-          ...scenario,
-          title: adjustedTitle,
-          situation: adjustedSituation,
-          options: adjustedOptions
-        };
-      });
-    }
+    // 캐시 저장
+    sessionStorage.setItem(sessionKey, JSON.stringify(adjusted));
+    console.log('📚 Adjusted scenarios locally (story style).');
+    return adjusted;
   };
 
   const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
     console.log(`🔧 Adjusting ${type} for difficulty ${difficultyLevel}:`, text);
     
     if (difficultyLevel === 'beginner') {
-      // 초급: 짧고 간단한 문장 구조, 기본 어휘 사용
+      // 하급: 아주 짧고 간단한 이야기 형식 (예: "친구와 놀았어요")
       let adjusted = text;
       
       if (type === 'title') {
-        // 핵심만 남기고 단순화
-        adjusted = text.split(' - ')[0]  // 부제목 제거
-                      .replace(/상황에서의 대처/g, '해결하기')
+        adjusted = text.split(' - ')[0]
+                      .replace(/상황에서의 대처/g, '')
                       .replace(/괴롭힘/g, '힘든 일')
-                      .replace(/대처법/g, '방법');
+                      .replace(/대처법/g, '')
+                      .trim();
       } else if (type === 'situation') {
-        // 문장을 짧게 나누고 쉬운 단어 사용
-        adjusted = text.replace(/~습니다|~하셨습니다/g, '~어요')
-                      .replace(/어떻게 해야 할까요\?/g, '뭘 할까요?')
-                      .replace(/상황입니다/g, '일이에요')
-                      .replace(/놀림을 받고 있습니다/g, '힘들어해요')
-                      .replace(/괴롭힘을 당하고/g, '힘든 일을 당하고')
-                      .split('.').slice(0, 2).join('.'); // 처음 2문장만 유지
+        // 첫 문장만 간단히, 1인칭 이야기 형식으로
+        adjusted = (text
+          .replace(/~습니다|~하셨습니다/g, '~어요')
+          .replace(/어떻게 해야 할까요\?/g, '뭘 할까요?')
+          .replace(/상황입니다/g, '일이에요')
+          .replace(/놀림을 받고 있습니다/g, '힘들어해요')
+          .replace(/괴롭힘을 당하고/g, '힘든 일을 당하고')
+          .split('.')[0] || text).trim();
+        if (!adjusted.endsWith('요') && !adjusted.endsWith('요.')) adjusted += '요';
+        if (!adjusted.endsWith('.')) adjusted += '.';
+        if (!adjusted.startsWith('나는') && !adjusted.startsWith('저는')) {
+          adjusted = '나는 ' + adjusted.toLowerCase();
+        }
       } else {
-        // 선택지도 단순하게
+        // 선택지 간단 표현
         adjusted = text.replace(/선생님께 말씀드린다/g, '선생님께 말해요')
-                      .replace(/사과한다/g, '미안하다고 해요')
-                      .replace(/도움을 준다/g, '도와줘요')
-                      .replace(/무시한다/g, '모르는 척해요');
+                       .replace(/사과한다/g, '미안하다고 해요')
+                       .replace(/도움을 준다/g, '도와줘요')
+                       .replace(/무시한다/g, '모르는 척해요');
       }
       
-      console.log(`🔧 Beginner adjusted:`, adjusted);
+      console.log('🔧 Beginner adjusted:', adjusted);
       return adjusted;
       
     } else if (difficultyLevel === 'advanced') {
-      // 고급: 더 길고 구체적인 문장, 복잡한 어휘 사용
+      // 상급: 배경이 포함된 상세한 이야기 형식 (예: "나는 학교가 끝난 뒤 ... 신나게 놀았어요")
       let adjusted = text;
       
       if (type === 'title') {
-        // 구체적인 상황 설명 추가
         if (!text.includes(' - ')) {
           adjusted = text + ' - 상황 분석 및 해결 방안';
         }
       } else if (type === 'situation') {
-        // 배경 정보와 세부 사항 추가
-        if (!text.includes('이러한 상황에서')) {
-          adjusted = text + ' 이러한 복잡한 상황에서 여러 요소를 고려하여 가장 적절한 대응 방법을 선택해야 합니다.';
+        let storyText = text.trim();
+        if (!storyText.includes('이러한 상황에서')) {
+          storyText += ' 이러한 복잡한 상황에서 여러 요소를 고려하여 가장 적절한 대응 방법을 선택해야 합니다.';
         }
+        if (!storyText.startsWith('나는') && !storyText.startsWith('저는')) {
+          storyText = '나는 ' + storyText;
+        }
+        adjusted = storyText;
       } else {
-        // 선택지에 구체적인 행동 방법 추가
         if (text.includes('선생님께 말한다')) {
-          adjusted = text.replace('선생님께 말한다', '상황을 정확히 파악하고 담당 선생님께 구체적으로 보고한다');
-        }
-        if (text.includes('사과한다')) {
+          adjusted = text.replace('선생님께 말한다', '상황을 정확히 파악한 뒤 담당 선생님께 구체적으로 보고한다');
+        } else if (text.includes('사과한다')) {
           adjusted = text.replace('사과한다', '진심으로 사과하고 앞으로 주의하겠다고 약속한다');
-        }
-        if (text.includes('도움을 준다')) {
+        } else if (text.includes('도움을 준다')) {
           adjusted = text.replace('도움을 준다', '상대방의 입장을 이해하고 적절한 도움을 제공한다');
+        } else {
+          adjusted = text + ' (구체적인 방법과 이유를 생각해보세요)';
         }
       }
       
-      console.log(`🔧 Advanced adjusted:`, adjusted);
+      console.log('🔧 Advanced adjusted:', adjusted);
       return adjusted;
     }
     
-    console.log(`🔧 Intermediate (unchanged):`, text);
-    return text; // intermediate는 원본 유지
+    // 중급: 자연스러운 1인칭 이야기 한 문장 (예: "나는 친구와 같이 놀이터에서 놀았어요")
+    let adjusted = text;
+    if (type === 'situation' && !adjusted.startsWith('나는') && !adjusted.startsWith('저는')) {
+      adjusted = '나는 ' + adjusted;
+    }
+    console.log('🔧 Intermediate adjusted:', adjusted);
+    return adjusted;
   };
 
   const loadScenarios = async () => {
