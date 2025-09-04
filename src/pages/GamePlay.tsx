@@ -172,46 +172,10 @@ const GamePlay = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('scenarios')
-        .select(`
-          id,
-          title,
-          situation,
-          scenario_options (
-            id,
-            text,
-            option_order,
-            is_correct
-          )
-        `)
-        .eq('category', 'main')
-        .eq('theme', theme)
-        .limit(20);
-
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        // 샘플 데이터 생성
-        await createSampleData();
-        return;
-      }
-
-      const formattedScenarios = data.map(scenario => ({
-        id: scenario.id,
-        title: scenario.title,
-        situation: scenario.situation,
-        options: scenario.scenario_options.sort((a, b) => a.option_order - b.option_order)
-      }));
-
-      // 랜덤하게 섞기
-      const shuffled = [...formattedScenarios].sort(() => Math.random() - 0.5);
+      // 항상 AI가 새로운 시나리오를 생성하도록 함
+      console.log('🚀 Always generating fresh scenarios with AI for theme:', theme);
+      await generateScenariosWithAI();
       
-      // 난이도에 맞게 시나리오 조정
-      console.log('Current difficulty level:', difficultyLevel);
-      const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
-      console.log('Adjusted scenarios:', adjustedScenarios);
-      setScenarios(adjustedScenarios);
     } catch (error) {
       console.error('Error loading scenarios:', error);
       toast({
@@ -224,14 +188,21 @@ const GamePlay = () => {
     }
   };
 
-  const createSampleData = async () => {
+  const generateScenariosWithAI = async () => {
     try {
       console.log('🚀 Generating scenarios with OpenAI for theme:', theme);
       toast({ 
-        title: "시나리오 생성 중...", 
-        description: "AI가 새로운 문제를 만들고 있어요. 잠시만 기다려주세요.",
+        title: "새로운 문제 생성 중...", 
+        description: "AI가 당신을 위한 맞춤 문제를 만들고 있어요!",
         duration: 5000
       });
+
+      // 기존 시나리오 삭제 (항상 새로 생성)
+      await supabase
+        .from('scenarios')
+        .delete()
+        .eq('category', 'main')
+        .eq('theme', theme);
 
       const { data, error } = await supabase.functions.invoke('generate-main-scenarios', {
         body: { theme }
@@ -246,59 +217,105 @@ const GamePlay = () => {
         console.log('✅ Successfully generated scenarios:', data.count);
         toast({ 
           title: "새로운 문제 완성! 🎉", 
-          description: `${data.count}개의 새로운 문제가 준비되었습니다.`
+          description: `${data.count}개의 맞춤 문제가 준비되었습니다!`
         });
         
-        // 생성 완료 후 시나리오 다시 로드
-        loadScenarios();
+        // 생성된 시나리오 로드
+        await loadGeneratedScenarios();
       } else {
         throw new Error(data.error || 'Unknown error');
       }
 
     } catch (error) {
-      console.error('Error creating scenarios with AI:', error);
+      console.error('Error generating scenarios with AI:', error);
       toast({
         title: "AI 생성 실패",
         description: "기본 문제를 사용합니다.",
         variant: "destructive"
       });
       
-      // AI 생성 실패 시 기존 하드코딩된 샘플 데이터 사용
-      const sampleScenarios = getSampleScenarios(theme || '', difficultyLevel);
-      
-      for (const scenario of sampleScenarios) {
-        try {
-          const { data: scenarioData, error: scenarioError } = await supabase
-            .from('scenarios')
-            .insert([{
-              title: scenario.title,
-              situation: scenario.situation,
-              category: 'main',
-              theme: theme
-            }])
-            .select()
-            .single();
-
-          if (scenarioError) throw scenarioError;
-
-          for (let i = 0; i < scenario.options.length; i++) {
-            await supabase
-              .from('scenario_options')
-              .insert([{
-                scenario_id: scenarioData.id,
-                text: scenario.options[i],
-                option_order: i,
-                is_correct: i === scenario.correctOption
-              }]);
-          }
-        } catch (error) {
-          console.error('Error creating fallback sample data:', error);
-        }
-      }
-
-      // 데이터 생성 후 다시 로드
-      loadScenarios();
+      // AI 생성 실패 시 폴백
+      await createFallbackScenarios();
     }
+  };
+
+  const loadGeneratedScenarios = async () => {
+    const { data, error } = await supabase
+      .from('scenarios')
+      .select(`
+        id,
+        title,
+        situation,
+        scenario_options (
+          id,
+          text,
+          option_order,
+          is_correct
+        )
+      `)
+      .eq('category', 'main')
+      .eq('theme', theme)
+      .limit(20);
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      throw new Error('No scenarios generated');
+    }
+
+    const formattedScenarios = data.map(scenario => ({
+      id: scenario.id,
+      title: scenario.title,
+      situation: scenario.situation,
+      options: scenario.scenario_options.sort((a, b) => a.option_order - b.option_order)
+    }));
+
+    // 랜덤하게 섞기
+    const shuffled = [...formattedScenarios].sort(() => Math.random() - 0.5);
+    
+    // 난이도에 맞게 시나리오 조정
+    console.log('Current difficulty level:', difficultyLevel);
+    const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
+    console.log('Adjusted scenarios:', adjustedScenarios);
+    setScenarios(adjustedScenarios);
+  };
+
+  const createFallbackScenarios = async () => {
+    // AI 생성 실패 시 기존 하드코딩된 샘플 데이터 사용
+    const sampleScenarios = getSampleScenarios(theme || '', difficultyLevel);
+    
+    for (const scenario of sampleScenarios) {
+      try {
+        const { data: scenarioData, error: scenarioError } = await supabase
+          .from('scenarios')
+          .insert([{
+            title: scenario.title,
+            situation: scenario.situation,
+            category: 'main',
+            theme: theme
+          }])
+          .select()
+          .single();
+
+        if (scenarioError) throw scenarioError;
+
+        for (let i = 0; i < scenario.options.length; i++) {
+          await supabase
+            .from('scenario_options')
+            .insert([{
+              scenario_id: scenarioData.id,
+              text: scenario.options[i],
+              option_order: i,
+              is_correct: i === scenario.correctOption
+            }]);
+        }
+      } catch (error) {
+        console.error('Error creating fallback sample data:', error);
+      }
+    }
+
+    // 폴백 데이터 생성 후 로드
+    await loadGeneratedScenarios();
   };
 
   const handleOptionSelect = async (optionIndex: number) => {
