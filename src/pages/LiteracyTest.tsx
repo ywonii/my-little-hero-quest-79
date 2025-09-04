@@ -21,49 +21,27 @@ const LiteracyTest = () => {
   const [isComplete, setIsComplete] = useState(false);
 
   const questions: Question[] = [
-    // 1단계 (하) - 짧은 문장, 기본 어휘
+    // 1단계 (하) - 간단한 상황 이해
     {
       id: 1,
-      question: "친구가 넘어졌어요.",
-      options: ["그냥 간다", "도와준다", "웃는다", "말한다"],
+      question: "친구가 울고 있어요. 어떻게 해야 할까요?",
+      options: ["그냥 지나간다", "달려가서 도와준다", "다른 친구와 논다", "모르는 척한다"],
       correctAnswer: 1,
       level: 'easy'
     },
-    // 2단계 (중) - 중간 길이 문장, 상황 설명 추가
+    // 2단계 (중) - 문장 이해 및 상황 판단
     {
       id: 2,
-      question: "나는 교실에서 책을 읽고 있어요. 친구들이 시끄럽게 떠들어요.",
-      options: ["같이 떠든다", "조용히 해달라고 한다", "화를 낸다", "그냥 참는다"],
+      question: "민수가 교실에서 책을 읽고 있는데 친구들이 시끄럽게 떠들고 있습니다. 민수는 어떻게 해야 할까요?",
+      options: ["같이 떠든다", "조용히 해달라고 말한다", "화를 낸다", "그냥 참는다"],
       correctAnswer: 1,
       level: 'medium'
     },
-    // 3단계 (상) - 긴 문장, 배경 정보와 세부 상황 포함
+    // 3단계 (상) - 복잡한 상황 분석 및 판단
     {
       id: 3,
-      question: "수업 시간에 짝꿍이 새 지우개를 빌려달라고 했어요. 내가 가져온 지우개는 새 것이고 하나밖에 없어요. 짝꿍은 평소에 물건을 자주 잃어버려요.",
-      options: ["빌려주지 않는다", "약속하고 빌려준다", "선생님께 말한다", "다른 친구에게 부탁한다"],
-      correctAnswer: 1,
-      level: 'hard'
-    },
-    // 추가 문제들 - 다양한 상황에서의 문해력 측정
-    {
-      id: 4,
-      question: "급식 시간이에요. 내 앞 친구가 우유를 흘렸어요.",
-      options: ["모른 척한다", "휴지를 준다", "웃는다", "선생님을 부른다"],
-      correctAnswer: 1,
-      level: 'easy'
-    },
-    {
-      id: 5,
-      question: "나는 운동장에서 축구를 하고 있어요. 다른 반 친구가 같이 하고 싶다고 해요.",
-      options: ["안 된다고 한다", "같이 하자고 한다", "무시한다", "도망간다"],
-      correctAnswer: 1,
-      level: 'medium'
-    },
-    {
-      id: 6,
-      question: "도서관에서 조용히 책을 읽고 있을 때 옆 친구가 계속 말을 걸어서 다른 사람들이 쳐다봐요. 나는 집중해서 책을 읽고 싶은데 친구의 기분을 상하게 하고 싶지도 않아요.",
-      options: ["큰 소리로 조용히 하라고 한다", "작은 소리로 나중에 이야기하자고 한다", "책을 덮고 나간다", "사서 선생님께 말한다"],
+      question: "수업 시간에 짝ꍍ이 지우개를 빌려달라고 했는데, 내가 가져온 지우개는 새 것이고 하나밖에 없습니다. 하지만 짝ꍍ은 평소에 물건을 잘 잃어버리는 편이에요. 어떻게 하는 것이 가장 좋을까요?",
+      options: ["절대 빌려주지 않는다", "조건을 정하고 빌려준다", "선생님께 말씀드린다", "다른 친구에게 부탁한다"],
       correctAnswer: 1,
       level: 'hard'
     }
@@ -90,34 +68,21 @@ const LiteracyTest = () => {
   };
 
   const calculateLevel = (userAnswers: number[]) => {
-    let easyCorrect = 0;
-    let mediumCorrect = 0;
-    let hardCorrect = 0;
-    
+    let correctCount = 0;
     questions.forEach((question, index) => {
       if (userAnswers[index] === question.correctAnswer) {
-        if (question.level === 'easy') easyCorrect++;
-        else if (question.level === 'medium') mediumCorrect++;
-        else if (question.level === 'hard') hardCorrect++;
+        correctCount++;
       }
     });
 
     let level: 'beginner' | 'intermediate' | 'advanced';
-    
-    // 하급: 쉬운 문제 중심으로 맞춘 경우
-    if (hardCorrect === 0 && mediumCorrect <= 1) {
-      level = 'beginner';
+    if (correctCount === 3) {
+      level = 'advanced'; // 상급 (3학년 수준)
+    } else if (correctCount === 2) {
+      level = 'intermediate'; // 중급 (2학년 수준)
+    } else {
+      level = 'beginner'; // 초급 (1학년 수준)
     }
-    // 상급: 어려운 문제를 대부분 맞춘 경우  
-    else if (hardCorrect >= 1 && mediumCorrect >= 1) {
-      level = 'advanced';
-    }
-    // 중급: 중간 수준의 문제를 맞춘 경우
-    else {
-      level = 'intermediate';
-    }
-
-    console.log('📚 Literacy test results:', { easyCorrect, mediumCorrect, hardCorrect, level });
 
     // 결과를 localStorage에 저장
     localStorage.setItem('literacyLevel', level);
@@ -132,10 +97,10 @@ const LiteracyTest = () => {
         <Card className="max-w-md mx-auto p-8 text-center">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-primary mb-4">
-            문해력 테스트 완료!
+            국어 실력 테스트 완료!
           </h2>
           <p className="text-muted-foreground mb-6">
-            여러분의 읽기 실력에 맞는 재미있는 상황 게임을 준비했어요!
+            이제 여러분의 실력에 맞는 재미있는 게임을 즐길 수 있어요!
           </p>
           <Button 
             onClick={() => navigate('/main-menu')}
@@ -157,11 +122,11 @@ const LiteracyTest = () => {
           <div className="flex items-center justify-center gap-2 mb-4">
             <BookOpen className="text-primary" size={28} />
             <h1 className="text-2xl font-bold text-primary">
-              문해력 테스트
+              국어 실력 테스트
             </h1>
           </div>
           <p className="text-muted-foreground">
-            상황을 이해하는 게임을 시작하기 전에 간단한 문제를 풀어보세요!
+            게임을 시작하기 전에 간단한 국어 문제를 풀어보세요!
           </p>
         </div>
 
