@@ -37,6 +37,7 @@ export type Database = {
           created_at: string
           id: string
           is_correct: boolean
+          option_order: number
           scenario_id: string | null
           text: string
         }
@@ -44,6 +45,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_correct?: boolean
+          option_order?: number
           scenario_id?: string | null
           text: string
         }
@@ -51,6 +53,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_correct?: boolean
+          option_order?: number
           scenario_id?: string | null
           text?: string
         }
@@ -66,23 +69,29 @@ export type Database = {
       }
       scenarios: {
         Row: {
+          category: string | null
           created_at: string
           id: string
           situation: string
+          theme: string | null
           theme_id: string | null
           title: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
           situation: string
+          theme?: string | null
           theme_id?: string | null
           title: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
           situation?: string
+          theme?: string | null
           theme_id?: string | null
           title?: string
         }
