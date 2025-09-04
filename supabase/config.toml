@@ -1,1 +1,7 @@
-project_id = "xufneikpvakgomsncqsp"
+project_id = "yzwmoyvprpqcnsjfasns"
+
+[functions.adjust-scenario-difficulty]
+verify_jwt = false
+
+[functions.generate-scenarios]
+verify_jwt = false

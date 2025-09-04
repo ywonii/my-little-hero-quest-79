@@ -7,8 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const supabaseUrl = 'https://xufneikpvakgomsncqsp.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Zm5laWtwdmFrZ29tc25jcXNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzMjkyOTUsImV4cCI6MjA3MDkwNTI5NX0.klkp0MzI6ZnEiVuW8tgydZNzszJ_NYJTOzmBWAgUQ20';
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,6 +21,10 @@ serve(async (req) => {
       throw new Error('OpenAI API Key is not set');
     }
 
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase URL or Service Role Key is not set');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
     const { scenarios, difficulty } = await req.json();
 
@@ -29,19 +33,14 @@ serve(async (req) => {
     // 난이도별 지침 설정
     const difficultyInstructions = {
       beginner: {
-        title: '초등학교 1학년 수준으로 매우 쉽고 간단한 단어를 사용하여 5글자 이내의 짧은 제목으로 만드세요.',
-        situation: '초등학교 1학년이 이해할 수 있는 매우 간단한 문장과 기본 어휘로 작성하세요. 문장은 20글자 이내로 짧고 명확하게 하세요.',
-        options: '초등학교 1학년이 읽을 수 있는 매우 간단한 단어와 짧은 문장으로 작성하세요. 각 선택지는 10글자 이내로 하세요.'
-      },
-      intermediate: {
-        title: '초등학교 2학년 수준의 어휘를 사용하여 적절한 길이의 제목으로 만드세요.',
-        situation: '초등학교 2학년이 이해할 수 있는 기본 어휘와 문장 구조를 사용하세요. 문장은 적당한 길이로 명확하게 표현하세요.',
-        options: '초등학교 2학년이 읽을 수 있는 기본 어휘로 작성하세요. 각 선택지는 적절한 길이로 하세요.'
+        title: '5-6세 아이가 이해할 수 있는 매우 쉽고 간단한 단어로 5글자 이내의 짧은 제목으로 만드세요.',
+        situation: '5-6세 아이가 이해할 수 있는 매우 간단한 문장과 기본 어휘로 작성하세요. 문장은 15글자 이내로 매우 짧고 명확하게 하세요.',
+        options: '5-6세 아이가 읽을 수 있는 매우 간단한 단어와 짧은 문장으로 작성하세요. 각 선택지는 8글자 이내로 하세요.'
       },
       advanced: {
-        title: '초등학교 3학년 수준의 조금 더 복잡한 어휘를 사용하여 구체적인 제목으로 만드세요.',
-        situation: '초등학교 3학년이 이해할 수 있는 다양한 어휘와 복합 문장을 사용하여 상황을 자세히 설명하세요.',
-        options: '초등학교 3학년 수준의 어휘와 문장을 사용하여 구체적으로 작성하세요.'
+        title: '초등학교 저학년이 이해할 수 있는 조금 더 구체적이고 자세한 제목으로 만드세요.',
+        situation: '초등학교 저학년 아이의 시점에서 직접 경험하는 것처럼 구체적이고 생생한 상황으로 다시 써주세요. "나는..." 형태로 시작하여 아이가 실제로 그 상황에 있는 것처럼 표현하세요.',
+        options: '초등학교 저학년이 실제 상황에서 할 수 있는 구체적이고 현실적인 행동들로 선택지를 만들어주세요.'
       }
     };
 

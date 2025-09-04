@@ -49,22 +49,73 @@ const GamePlay = () => {
     loadScenarios();
   }, [difficultyLevel]); // 별도 useEffect로 분리
 
-  const adjustScenariosDifficulty = (scenarios: Scenario[]) => {
-    return scenarios.map(scenario => {
-      const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
-      const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
-      const adjustedOptions = scenario.options.map(option => ({
-        ...option,
-        text: adjustTextByDifficulty(option.text, 'option')
-      }));
+  const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
+    const difficulty = difficultyLevel;
+    
+    if (difficulty === 'intermediate') {
+      return scenarios; // 중급은 원본 그대로 사용
+    }
 
-      return {
-        ...scenario,
-        title: adjustedTitle,
-        situation: adjustedSituation,
-        options: adjustedOptions
-      };
-    });
+    // 세션 스토리지에서 이미 조정된 시나리오가 있는지 확인
+    const sessionKey = `adjusted_scenarios_${difficulty}_${theme}`;
+    const cachedScenarios = sessionStorage.getItem(sessionKey);
+    
+    if (cachedScenarios) {
+      console.log('📚 Using cached adjusted scenarios');
+      return JSON.parse(cachedScenarios);
+    }
+
+    // API를 통해 시나리오 난이도 조정
+    try {
+      console.log('📚 Calling adjust-scenario-difficulty API', { difficulty, scenarioCount: scenarios.length });
+      toast({ title: "시나리오를 준비 중입니다...", description: "잠시만 기다려주세요." });
+      
+      const { data, error } = await supabase.functions.invoke('adjust-scenario-difficulty', {
+        body: { scenarios, difficulty }
+      });
+
+      if (error) {
+        console.error('Error adjusting scenarios:', error);
+        throw error;
+      }
+
+      if (data.success) {
+        // 조정된 시나리오를 세션 스토리지에 저장
+        sessionStorage.setItem(sessionKey, JSON.stringify(data.adjustedScenarios));
+        toast({ 
+          title: "준비 완료!", 
+          description: `${difficulty === 'beginner' ? '하급' : '상급'} 난이도로 설정되었습니다.` 
+        });
+        console.log('📚 Successfully adjusted scenarios via API');
+        return data.adjustedScenarios;
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (error) {
+      console.error('Error calling adjust-scenario-difficulty:', error);
+      toast({ 
+        title: "API 오류", 
+        description: "기본 텍스트 조정을 사용합니다.",
+        variant: "destructive" 
+      });
+      
+      // API 실패 시 기존 로직 사용
+      return scenarios.map(scenario => {
+        const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
+        const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
+        const adjustedOptions = scenario.options.map(option => ({
+          ...option,
+          text: adjustTextByDifficulty(option.text, 'option')
+        }));
+
+        return {
+          ...scenario,
+          title: adjustedTitle,
+          situation: adjustedSituation,
+          options: adjustedOptions
+        };
+      });
+    }
   };
 
   const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
@@ -175,7 +226,7 @@ const GamePlay = () => {
       
       // 난이도에 맞게 시나리오 조정
       console.log('Current difficulty level:', difficultyLevel);
-      const adjustedScenarios = adjustScenariosDifficulty(shuffled);
+      const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
       console.log('Adjusted scenarios:', adjustedScenarios);
       setScenarios(adjustedScenarios);
     } catch (error) {
