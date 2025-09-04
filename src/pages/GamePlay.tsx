@@ -225,41 +225,80 @@ const GamePlay = () => {
   };
 
   const createSampleData = async () => {
-    // 테마별 샘플 시나리오 생성 (난이도에 따라)
-    const sampleScenarios = getSampleScenarios(theme || '', difficultyLevel);
-    
-    for (const scenario of sampleScenarios) {
-      try {
-        const { data: scenarioData, error: scenarioError } = await supabase
-          .from('scenarios')
-          .insert([{
-            title: scenario.title,
-            situation: scenario.situation,
-            category: 'main',
-            theme: theme
-          }])
-          .select()
-          .single();
+    try {
+      console.log('🚀 Generating scenarios with OpenAI for theme:', theme);
+      toast({ 
+        title: "시나리오 생성 중...", 
+        description: "AI가 새로운 문제를 만들고 있어요. 잠시만 기다려주세요.",
+        duration: 5000
+      });
 
-        if (scenarioError) throw scenarioError;
+      const { data, error } = await supabase.functions.invoke('generate-main-scenarios', {
+        body: { theme }
+      });
 
-        for (let i = 0; i < scenario.options.length; i++) {
-          await supabase
-            .from('scenario_options')
-            .insert([{
-              scenario_id: scenarioData.id,
-              text: scenario.options[i],
-              option_order: i,
-              is_correct: i === scenario.correctOption
-            }]);
-        }
-      } catch (error) {
-        console.error('Error creating sample data:', error);
+      if (error) {
+        console.error('Error generating scenarios:', error);
+        throw error;
       }
-    }
 
-    // 데이터 생성 후 다시 로드
-    loadScenarios();
+      if (data.success) {
+        console.log('✅ Successfully generated scenarios:', data.count);
+        toast({ 
+          title: "새로운 문제 완성! 🎉", 
+          description: `${data.count}개의 새로운 문제가 준비되었습니다.`
+        });
+        
+        // 생성 완료 후 시나리오 다시 로드
+        loadScenarios();
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+
+    } catch (error) {
+      console.error('Error creating scenarios with AI:', error);
+      toast({
+        title: "AI 생성 실패",
+        description: "기본 문제를 사용합니다.",
+        variant: "destructive"
+      });
+      
+      // AI 생성 실패 시 기존 하드코딩된 샘플 데이터 사용
+      const sampleScenarios = getSampleScenarios(theme || '', difficultyLevel);
+      
+      for (const scenario of sampleScenarios) {
+        try {
+          const { data: scenarioData, error: scenarioError } = await supabase
+            .from('scenarios')
+            .insert([{
+              title: scenario.title,
+              situation: scenario.situation,
+              category: 'main',
+              theme: theme
+            }])
+            .select()
+            .single();
+
+          if (scenarioError) throw scenarioError;
+
+          for (let i = 0; i < scenario.options.length; i++) {
+            await supabase
+              .from('scenario_options')
+              .insert([{
+                scenario_id: scenarioData.id,
+                text: scenario.options[i],
+                option_order: i,
+                is_correct: i === scenario.correctOption
+              }]);
+          }
+        } catch (error) {
+          console.error('Error creating fallback sample data:', error);
+        }
+      }
+
+      // 데이터 생성 후 다시 로드
+      loadScenarios();
+    }
   };
 
   const handleOptionSelect = async (optionIndex: number) => {
