@@ -49,9 +49,18 @@ const GamePlay = () => {
     loadScenarios();
   }, [difficultyLevel]); // 별도 useEffect로 분리
 
+  useEffect(() => {
+    // 난이도/테마 변경 시, 이전 변환 결과 캐시 제거
+    const keys = Object.keys(sessionStorage).filter(
+      (k) => k.startsWith('adjusted_scenarios_') && k.endsWith(`_${theme}`)
+    );
+    keys.forEach((k) => sessionStorage.removeItem(k));
+  }, [difficultyLevel, theme]);
+
   const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
     const difficulty = difficultyLevel;
-    const sessionKey = `adjusted_scenarios_${difficulty}_${theme}`;
+    const CACHE_VER = 'v2'; // 필요할 때 'v3'로 올리세요.
+    const sessionKey = `adjusted_scenarios_${CACHE_VER}_${difficulty}_${theme}`;
 
     // 캐시 확인
     const cachedScenarios = sessionStorage.getItem(sessionKey);
@@ -120,82 +129,63 @@ const GamePlay = () => {
 
   const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
     console.log(`🔧 Adjusting ${type} for difficulty ${difficultyLevel}:`, text);
-    
+
+    // 하(초급): 아주 짧고 쉬운 말 + "~요" 종결
     if (difficultyLevel === 'beginner') {
-      // 하급: 아주 짧고 간단한 이야기 형식 (예: "친구와 놀았어요")
-      let adjusted = text;
-      
       if (type === 'title') {
-        adjusted = text.split(' - ')[0]
-                      .replace(/상황에서의 대처/g, '')
-                      .replace(/괴롭힘/g, '힘든 일')
-                      .replace(/대처법/g, '')
-                      .trim();
-      } else if (type === 'situation') {
-        // 첫 문장만 간단히, 1인칭 이야기 형식으로
-        adjusted = (text
-          .replace(/~습니다|~하셨습니다/g, '~어요')
-          .replace(/어떻게 해야 할까요\?/g, '뭘 할까요?')
-          .replace(/상황입니다/g, '일이에요')
-          .replace(/놀림을 받고 있습니다/g, '힘들어해요')
-          .replace(/괴롭힘을 당하고/g, '힘든 일을 당하고')
-          .split('.')[0] || text).trim();
-        if (!adjusted.endsWith('요') && !adjusted.endsWith('요.')) adjusted += '요';
-        if (!adjusted.endsWith('.')) adjusted += '.';
-        if (!adjusted.startsWith('나는') && !adjusted.startsWith('저는')) {
-          adjusted = '나는 ' + adjusted.toLowerCase();
-        }
-      } else {
-        // 선택지 간단 표현
-        adjusted = text.replace(/선생님께 말씀드린다/g, '선생님께 말해요')
-                       .replace(/사과한다/g, '미안하다고 해요')
-                       .replace(/도움을 준다/g, '도와줘요')
-                       .replace(/무시한다/g, '모르는 척해요');
+        // 제목이 길면 8자 정도로 잘라 체감 차이
+        return text.replace(/(.{8}).*/, '$1');
       }
-      
-      console.log('🔧 Beginner adjusted:', adjusted);
-      return adjusted;
-      
-    } else if (difficultyLevel === 'advanced') {
-      // 상급: 1~2문장, 첫 문장은 1인칭, 메타 문장 금지
-      let adjusted = text;
-      
-      if (type === 'title') {
-        // 제목은 원문 유지(불필요한 수식어/접미어 추가 금지)
-        adjusted = text;
-      } else if (type === 'situation') {
-        let storyText = text.trim();
-        // 메타 문장 제거 유도: 고정 문구 추가 금지, 1인칭 형태만 보장
-        if (!storyText.startsWith('나는') && !storyText.startsWith('저는')) {
-          storyText = '나는 ' + storyText;
-        }
-        if (!storyText.endsWith('.')) {
-          storyText += '.';
-        }
-        adjusted = storyText;
-      } else {
-        if (text.includes('선생님께 말한다')) {
-          adjusted = text.replace('선생님께 말한다', '상황을 정확히 파악한 뒤 담당 선생님께 구체적으로 보고한다');
-        } else if (text.includes('사과한다')) {
-          adjusted = text.replace('사과한다', '진심으로 사과하고 앞으로 주의하겠다고 약속한다');
-        } else if (text.includes('도움을 준다')) {
-          adjusted = text.replace('도움을 준다', '상대방의 입장을 이해하고 적절한 도움을 제공한다');
-        } else {
-          adjusted = text + ' (구체적인 방법과 이유를 생각해보세요)';
-        }
+      if (type === 'situation') {
+        let s = text.replace(/[.?!].*$/,''); // 첫 문장만
+        if (!/^나는|^저는/.test(s)) s = '나는 ' + s;
+        s = s.replace(/습니다|합니다/g, '해요');
+        if (!/[.!?]$/.test(s)) s += '.';
+        return s;
       }
-      
-      console.log('🔧 Advanced adjusted:', adjusted);
-      return adjusted;
+      // option: 쉬운 단어로 바꾸기
+      return text
+        .replace(/선생님께 말씀드린다/g, '선생님께 말해요')
+        .replace(/사과한다/g, '미안하다고 해요')
+        .replace(/도움을 준다/g, '도와줘요')
+        .replace(/무시한다/g, '모르는 척해요');
     }
-    
-    // 중급: 자연스러운 1인칭 이야기 한 문장 (예: "나는 친구와 같이 놀이터에서 놀았어요")
-    let adjusted = text;
-    if (type === 'situation' && !adjusted.startsWith('나는') && !adjusted.startsWith('저는')) {
-      adjusted = '나는 ' + adjusted;
+
+    // 중(중급): 한 문장 1인칭 + 아주 짧은 이유 토막
+    if (difficultyLevel === 'intermediate') {
+      if (type === 'situation') {
+        let s = text.replace(/[.?!].*$/,''); // 첫 문장만
+        if (!/^나는|^저는/.test(s)) s = '나는 ' + s;
+        s = (s + ' 그래서 이렇게 해요.').replace(/\.{2,}/g,'.');
+        return s;
+      }
+      // option: 어미를 "~해요."로 통일
+      return text.replace(/다\.?$/, '해요.');
     }
-    console.log('🔧 Intermediate adjusted:', adjusted);
-    return adjusted;
+
+    // 상(상급): 구체적 행동 어투(메타 문장 금지)
+    if (difficultyLevel === 'advanced') {
+      if (type === 'situation') {
+        let s = text.trim();
+        if (!/^나는|^저는/.test(s)) s = '나는 ' + s;
+        if (!/[.!?]$/.test(s)) s += '.';
+        return s;
+      }
+      // option: 구체화 사전(없으면 어미만 "한다."로 또렷하게)
+      const map: Array<[RegExp,string]> = [
+        [/선생님께 말한다/g, '상황을 확인한 뒤 담당 선생님께 정확히 보고한다'],
+        [/사과한다/g, '진심으로 사과하고 재발 방지 약속을 한다'],
+        [/도움을 준다/g, '상대방 입장을 이해하고 필요한 도움을 제공한다'],
+        [/기다린다/g, '질서 유지를 위해 순서를 지켜 기다린다'],
+      ];
+      let out = text;
+      for (const [re, rep] of map) out = out.replace(re, rep);
+      if (out === text) out = out.replace(/해요\.?$/, '한다.'); // 상급 어투 통일
+      return out;
+    }
+
+    // 기본(혹시 모를 안전장치)
+    return text;
   };
 
   const loadScenarios = async () => {
