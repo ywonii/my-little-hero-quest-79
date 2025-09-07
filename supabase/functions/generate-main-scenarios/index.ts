@@ -128,12 +128,32 @@ serve(async (req) => {
     const scenarios = JSON.parse(responseText);
     console.log('Generated scenarios:', scenarios);
 
-    // 기존 메인 테마 시나리오 삭제
-    await supabase
+    // 기존 시나리오가 있는지 확인
+    const { data: existingScenarios, error: checkError } = await supabase
       .from('scenarios')
-      .delete()
+      .select('id')
       .eq('category', 'main')
       .eq('theme', theme);
+
+    if (checkError) {
+      console.error('Error checking existing scenarios:', checkError);
+    }
+
+    if (existingScenarios && existingScenarios.length > 0) {
+      console.log('Found existing scenarios for theme:', theme, 'count:', existingScenarios.length);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        scenarios: existingScenarios,
+        count: existingScenarios.length,
+        theme,
+        message: 'Using existing scenarios'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 기존 시나리오가 없을 때만 새로 생성
+    console.log('No existing scenarios found, generating new ones...');
 
     const savedScenarios: any[] = [];
 

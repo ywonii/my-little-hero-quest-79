@@ -202,9 +202,52 @@ const GamePlay = () => {
     try {
       setLoading(true);
       
-      // 항상 AI가 새로운 시나리오를 생성하도록 함
-      console.log('🚀 Always generating fresh scenarios with AI for theme:', theme);
-      await generateScenariosWithAI();
+      // 먼저 기존 시나리오가 있는지 확인
+      console.log('🔍 Checking for existing scenarios for theme:', theme);
+      const { data: existingScenarios, error: checkError } = await supabase
+        .from('scenarios')
+        .select(`
+          id,
+          title,
+          situation,
+          scenario_options (
+            id,
+            text,
+            option_order,
+            is_correct
+          )
+        `)
+        .eq('category', 'main')
+        .eq('theme', theme)
+        .limit(20);
+
+      if (checkError) throw checkError;
+
+      if (existingScenarios && existingScenarios.length > 0) {
+        console.log('✅ Found existing scenarios, using cached ones:', existingScenarios.length);
+        toast({ 
+          title: "기존 문제 불러오기", 
+          description: `${existingScenarios.length}개의 저장된 문제를 사용합니다!`
+        });
+        
+        const formattedScenarios = existingScenarios.map(scenario => ({
+          id: scenario.id,
+          title: scenario.title,
+          situation: scenario.situation,
+          options: scenario.scenario_options.sort((a, b) => a.option_order - b.option_order)
+        }));
+
+        // 랜덤하게 섞기
+        const shuffled = [...formattedScenarios].sort(() => Math.random() - 0.5);
+        
+        // 난이도에 맞게 시나리오 조정
+        const adjustedScenarios = await adjustScenariosDifficulty(shuffled);
+        setScenarios(adjustedScenarios);
+      } else {
+        // 기존 시나리오가 없으면 새로 생성
+        console.log('🚀 No existing scenarios, generating fresh ones with AI for theme:', theme);
+        await generateScenariosWithAI();
+      }
       
     } catch (error) {
       console.error('Error loading scenarios:', error);
@@ -226,13 +269,6 @@ const GamePlay = () => {
         description: "AI가 당신을 위한 맞춤 문제를 만들고 있어요!",
         duration: 5000
       });
-
-      // 기존 시나리오 삭제 (항상 새로 생성)
-      await supabase
-        .from('scenarios')
-        .delete()
-        .eq('category', 'main')
-        .eq('theme', theme);
 
       const { data, error } = await supabase.functions.invoke('generate-main-scenarios', {
         body: { theme }
