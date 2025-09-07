@@ -157,20 +157,20 @@ const GamePlay = () => {
       return adjusted;
       
     } else if (difficultyLevel === 'advanced') {
-      // 상급: 배경이 포함된 상세한 이야기 형식 (예: "나는 학교가 끝난 뒤 ... 신나게 놀았어요")
+      // 상급: 1~2문장, 첫 문장은 1인칭, 메타 문장 금지
       let adjusted = text;
       
       if (type === 'title') {
-        if (!text.includes(' - ')) {
-          adjusted = text + ' - 상황 분석 및 해결 방안';
-        }
+        // 제목은 원문 유지(불필요한 수식어/접미어 추가 금지)
+        adjusted = text;
       } else if (type === 'situation') {
         let storyText = text.trim();
-        if (!storyText.includes('이러한 상황에서')) {
-          storyText += ' 이러한 복잡한 상황에서 여러 요소를 고려하여 가장 적절한 대응 방법을 선택해야 합니다.';
-        }
+        // 메타 문장 제거 유도: 고정 문구 추가 금지, 1인칭 형태만 보장
         if (!storyText.startsWith('나는') && !storyText.startsWith('저는')) {
           storyText = '나는 ' + storyText;
+        }
+        if (!storyText.endsWith('.')) {
+          storyText += '.';
         }
         adjusted = storyText;
       } else {
