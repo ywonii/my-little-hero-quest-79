@@ -120,7 +120,7 @@ serve(async (req) => {
     const { data: themeData, error: themeError } = await supabase
       .from('custom_themes')
       .insert([{
-        theme_name: themeName,
+        name: themeName,
         description: problemDescription
       }])
       .select()
@@ -142,7 +142,7 @@ serve(async (req) => {
           title: scenario.title,
           situation: scenario.situation,
           category: 'custom',
-          theme: themeData.theme_name
+          theme: themeData.name
         }])
         .select()
         .single();
