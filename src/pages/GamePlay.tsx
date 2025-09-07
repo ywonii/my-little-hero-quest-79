@@ -171,11 +171,18 @@ const GamePlay = () => {
     // ===== 상 (상급) =====
     if (difficultyLevel === 'advanced') {
       if (type === 'situation') {
-        // 구체적 상황 묘사, 메타 문구 X
+        // 구체적 상황 묘사, 메타 문구 X, 정확히 2문장으로 강제
         let s = text.trim();
         if (!/^나는|^저는/.test(s)) s = '나는 ' + s;
+        // 문장 구분
+        const parts = s.split(/(?<=[.!?])\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+          return parts[0].replace(/\s+$/,'') + ' ' + parts[1].replace(/^\s+/, '');
+        }
+        // 1문장인 경우, 간단한 이유 문장 추가로 2문장 구성
         if (!/[.!?]$/.test(s)) s += '.';
-        return s;
+        const add = '이유를 생각하고 차분히 행동해요.';
+        return `${s} ${add}`;
       }
       // 선택지: 구체적 행동으로 강화
       const map: Array<[RegExp, string]> = [
