@@ -31,19 +31,24 @@ serve(async (req) => {
 
     console.log('Adjusting scenario difficulty:', { difficulty, scenarioCount: scenarios.length });
 
-    // 난이도별 지침 설정
+    // 난이도별 지침 설정 (문해력 스케일 반영)
     const difficultyInstructions = {
       beginner: {
-        title: '5-6세 아이가 이해할 수 있는 매우 쉽고 간단한 단어로 5글자 이내의 짧은 제목으로 만드세요.',
-        situation: '5-6세 아이가 이해할 수 있는 매우 간단한 문장과 기본 어휘로 작성하세요. 문장은 15글자 이내로 매우 짧고 명확하게 하세요.',
-        options: '5-6세 아이가 읽을 수 있는 매우 간단한 단어와 짧은 문장으로 작성하세요. 각 선택지는 8글자 이내로 하세요.'
+        title: '아주 쉬운 단어, 4~6글자 수준의 매우 짧은 제목으로 만드세요.',
+        situation: '1문장, 4~6어절, 연결어/종속절 없음, 단순 동사 사용. 예: "친구와 놀았어요"',
+        options: '각 선택지는 행동 중심, 3~6어절, 단문. 예: "차례를 지킨다", "자리에 앉는다"'
+      },
+      intermediate: {
+        title: '간단·명확한 제목, 핵심 명사+동사 2~3개까지 허용.',
+        situation: '1문장, 7~11어절, 장소/시간 수식어 1개 허용, 단순 연결어 1개 이내. 예: "나는 친구와 같이 놀이터에서 놀았어요"',
+        options: '행동 중심, 5~9어절, 완곡한 표현 허용. 예: "차례를 기다리고 순서를 지킨다"'
       },
       advanced: {
-        title: '초등학교 저학년이 이해할 수 있는 조금 더 구체적이고 자세한 제목으로 만드세요.',
-        situation: '초등학교 저학년 아이의 시점에서 직접 경험하는 것처럼 구체적이고 생생한 상황으로 다시 써주세요. "나는..." 형태로 시작하여 아이가 실제로 그 상황에 있는 것처럼 표현하세요.',
-        options: '초등학교 저학년이 실제 상황에서 할 수 있는 구체적이고 현실적인 행동들로 선택지를 만들어주세요.'
+        title: '조금 더 구체적이고 상황이 드러나는 제목.',
+        situation: '1~2문장, 12~18어절, 시간/장소 + 부사 1개 + 이유/배경 1개 허용. 예: "나는 학교가 끝난 뒤 친구와 놀이터에서 신나게 놀았어요"',
+        options: '행동 중심, 구체 단계 포함 가능(준비→행동). 길이는 7~12어절.'
       }
-    };
+    } as const;
 
     const adjustedScenarios = [];
 
@@ -66,6 +71,11 @@ serve(async (req) => {
               - 제목: ${difficultyInstructions[difficulty as keyof typeof difficultyInstructions].title}
               - 상황: ${difficultyInstructions[difficulty as keyof typeof difficultyInstructions].situation}
               - 선택지: ${difficultyInstructions[difficulty as keyof typeof difficultyInstructions].options}
+
+              추가 규칙:
+              - 선택지는 반드시 '행동'이어야 하며, 정답은 규칙 준수에 근거해 명확해야 합니다.
+              - 오답은 정답과 혼동되지 않도록 규칙 위반/관계 훼손 요소를 포함하되 과도한 표현은 지양합니다.
+              - 문장은 해당 난이도의 어절·수식어 제한을 반드시 지키세요.
 
               다음 JSON 형식으로 반환해주세요:
               {
