@@ -44,6 +44,14 @@ const GamePlay = () => {
     }
   }, [theme]); // difficultyLevel 제거
 
+  // 최초 마운트 시에도 동기화 (같은 테마 재진입 시 반영)
+  useEffect(() => {
+    const savedLevel = localStorage.getItem('literacyLevel') as 'beginner' | 'intermediate' | 'advanced';
+    if (savedLevel && savedLevel !== difficultyLevel) {
+      setDifficultyLevel(savedLevel);
+    }
+  }, []);
+
   useEffect(() => {
     console.log('📚 Difficulty level changed, reloading scenarios:', difficultyLevel);
     loadScenarios();
@@ -57,8 +65,14 @@ const GamePlay = () => {
     keys.forEach((k) => sessionStorage.removeItem(k));
   }, [difficultyLevel, theme]);
 
-  const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
-    const difficulty = difficultyLevel;
+  const getEffectiveLevel = (): 'beginner' | 'intermediate' | 'advanced' => {
+    const saved = localStorage.getItem('literacyLevel') as 'beginner' | 'intermediate' | 'advanced' | null;
+    if (saved === 'beginner' || saved === 'intermediate' || saved === 'advanced') return saved;
+    return difficultyLevel;
+  };
+
+  const adjustScenariosDifficulty = async (scenarios: Scenario[], levelOverride?: 'beginner' | 'intermediate' | 'advanced') => {
+    const difficulty = levelOverride ?? getEffectiveLevel();
     const CACHE_VER = 'v2'; // 필요할 때 'v3'로 올리세요.
     const sessionKey = `adjusted_scenarios_${CACHE_VER}_${difficulty}_${theme}`;
 
