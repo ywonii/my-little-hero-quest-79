@@ -219,10 +219,26 @@ const GamePlay = () => {
   const loadScenarios = async () => {
     try {
       setLoading(true);
-      
-      // 항상 AI가 새로운 시나리오를 생성하도록 함
-      console.log('🚀 Always generating fresh scenarios with AI for theme:', theme);
-      await generateScenariosWithAI();
+      if (!theme) throw new Error('No theme provided');
+
+      // 1) DB에 기존 시나리오가 있으면 재생성 없이 그대로 사용
+      const { data: existing, error: existErr } = await supabase
+        .from('scenarios')
+        .select('id')
+        .eq('category', 'main')
+        .eq('theme', theme)
+        .limit(1);
+
+      if (existErr) throw existErr;
+
+      if (existing && existing.length > 0) {
+        console.log('🗂️ Using existing scenarios from DB for theme:', theme);
+        await loadGeneratedScenarios();
+      } else {
+        // 2) 없으면 한 번만 생성
+        console.log('🚀 No scenarios found. Generating with AI for theme:', theme);
+        await generateScenariosWithAI();
+      }
       
     } catch (error) {
       console.error('Error loading scenarios:', error);
