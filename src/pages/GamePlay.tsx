@@ -51,41 +51,71 @@ const GamePlay = () => {
 
   const adjustScenariosDifficulty = async (scenarios: Scenario[]) => {
     const difficulty = difficultyLevel;
-    
-    if (difficulty === 'intermediate') {
-      return scenarios; // 중급은 원본 그대로 사용
-    }
-
-    // 세션 스토리지에서 이미 조정된 시나리오가 있는지 확인
     const sessionKey = `adjusted_scenarios_${difficulty}_${theme}`;
+
+    // 캐시 확인
     const cachedScenarios = sessionStorage.getItem(sessionKey);
-    
     if (cachedScenarios) {
       console.log('📚 Using cached adjusted scenarios');
       return JSON.parse(cachedScenarios);
     }
 
-    // API 호출 없이 프런트엔드에서 이야기 형식으로 난이도 조정
-    const adjusted = scenarios.map(scenario => {
-      const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
-      const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
-      const adjustedOptions = scenario.options.map(option => ({
-        ...option,
-        text: adjustTextByDifficulty(option.text, 'option')
-      }));
+    try {
+      console.log('🛰️ Adjusting scenarios on server with OpenAI:', { difficulty, count: scenarios.length });
+      const { data, error } = await supabase.functions.invoke('adjust-scenario-difficulty', {
+        body: {
+          scenarios: scenarios.map(s => ({
+            id: s.id,
+            title: s.title,
+            situation: s.situation,
+            options: s.options.map(o => ({ id: o.id, text: o.text, option_order: o.option_order, is_correct: o.is_correct }))
+          })),
+          difficulty
+        }
+      });
 
-      return {
-        ...scenario,
-        title: adjustedTitle,
-        situation: adjustedSituation,
-        options: adjustedOptions
-      };
-    });
+      if (error) throw error;
+      if (data && data.success && Array.isArray(data.adjustedScenarios)) {
+        // 서버 반환값으로 프론트 시나리오 동기화 (옵션 id/정답 유지, 텍스트만 업데이트)
+        const adjustedById: Record<string, { title: string; situation: string; options: string[] }> = {};
+        data.adjustedScenarios.forEach((a: any) => {
+          adjustedById[String(a.id)] = { title: a.title, situation: a.situation, options: a.options };
+        });
 
-    // 캐시 저장
-    sessionStorage.setItem(sessionKey, JSON.stringify(adjusted));
-    console.log('📚 Adjusted scenarios locally (story style).');
-    return adjusted;
+        const merged = scenarios.map(s => {
+          const adj = adjustedById[String(s.id)];
+          if (!adj) return s;
+          const newOptions = s.options.map((opt, idx) => ({
+            ...opt,
+            text: (adj.options && adj.options[idx]) ? adj.options[idx] : opt.text
+          }));
+          return { ...s, title: adj.title, situation: adj.situation, options: newOptions };
+        });
+
+        sessionStorage.setItem(sessionKey, JSON.stringify(merged));
+        console.log('✅ Server-adjusted scenarios applied and cached.');
+        return merged;
+      }
+
+      throw new Error('Invalid server response for difficulty adjustment');
+    } catch (err) {
+      console.warn('⚠️ Server adjust failed, falling back to local adjust:', err);
+
+      // 로컬 조정 방식 (기존 이야기형 변환)
+      const adjusted = scenarios.map(scenario => {
+        const adjustedTitle = adjustTextByDifficulty(scenario.title, 'title');
+        const adjustedSituation = adjustTextByDifficulty(scenario.situation, 'situation');
+        const adjustedOptions = scenario.options.map(option => ({
+          ...option,
+          text: adjustTextByDifficulty(option.text, 'option')
+        }));
+        return { ...scenario, title: adjustedTitle, situation: adjustedSituation, options: adjustedOptions };
+      });
+
+      sessionStorage.setItem(sessionKey, JSON.stringify(adjusted));
+      console.log('📚 Adjusted scenarios locally (fallback).');
+      return adjusted;
+    }
   };
 
   const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
