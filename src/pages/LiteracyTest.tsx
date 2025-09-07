@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { BookOpen, ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Question {
   id: number;
@@ -19,8 +20,10 @@ const LiteracyTest = () => {
   const [answers, setAnswers] = useState<number[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isComplete, setIsComplete] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [questions, setQuestions] = useState<Question[] | null>(null);
 
-  const questions: Question[] = [
+  const fallbackQuestions: Question[] = [
     // 1단계 (하) - 간단한 상황 이해
     {
       id: 1,
@@ -69,7 +72,7 @@ const LiteracyTest = () => {
 
   const calculateLevel = (userAnswers: number[]) => {
     let correctCount = 0;
-    questions.forEach((question, index) => {
+    (questions || fallbackQuestions).forEach((question, index) => {
       if (userAnswers[index] === question.correctAnswer) {
         correctCount++;
       }
@@ -89,7 +92,48 @@ const LiteracyTest = () => {
     localStorage.setItem('literacyTestCompleted', 'true');
   };
 
-  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  useEffect(() => {
+    const loadQuiz = async () => {
+      try {
+        setLoading(true);
+        // 캐시 확인
+        const cached = sessionStorage.getItem('literacy_quiz_v1');
+        if (cached) {
+          setQuestions(JSON.parse(cached));
+          setLoading(false);
+          return;
+        }
+        const { data, error } = await supabase.functions.invoke('generate-literacy-quiz', {
+          body: { count: 3 }
+        });
+        if (error || !data?.success || !Array.isArray(data.questions)) {
+          setQuestions(null);
+          setLoading(false);
+          return;
+        }
+        // 타입 정규화
+        const normalized: Question[] = data.questions.map((q: any, idx: number) => ({
+          id: q.id ?? idx + 1,
+          question: String(q.question),
+          options: Array.isArray(q.options) ? q.options.slice(0, 4).map(String) : [],
+          correctAnswer: Number(q.correctAnswer ?? 0),
+          level: (q.level === 'easy' || q.level === 'medium' || q.level === 'hard') ? q.level : 'medium',
+        }));
+        // 최소 3문항 보장
+        const picked = normalized.slice(0, 3);
+        sessionStorage.setItem('literacy_quiz_v1', JSON.stringify(picked));
+        setQuestions(picked);
+      } catch (e) {
+        setQuestions(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadQuiz();
+  }, []);
+
+  const qList = questions || fallbackQuestions;
+  const progress = ((currentQuestion + 1) / qList.length) * 100;
 
   if (isComplete) {
     return (
@@ -142,11 +186,11 @@ const LiteracyTest = () => {
         {/* 질문 */}
         <Card className="p-6 mb-6">
           <h2 className="text-lg font-bold text-foreground mb-4 leading-relaxed">
-            {questions[currentQuestion].question}
+            {qList[currentQuestion].question}
           </h2>
 
           <div className="space-y-3">
-            {questions[currentQuestion].options.map((option, index) => (
+            {qList[currentQuestion].options.map((option, index) => (
               <Button
                 key={index}
                 variant={selectedAnswer === index ? "default" : "outline"}
@@ -166,7 +210,7 @@ const LiteracyTest = () => {
           className="w-full"
           size="lg"
         >
-          {currentQuestion < questions.length - 1 ? '다음 문제' : '완료'}
+          {currentQuestion < qList.length - 1 ? '다음 문제' : '완료'}
           <ArrowRight className="ml-2" size={16} />
         </Button>
 
