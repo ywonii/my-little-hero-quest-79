@@ -127,23 +127,27 @@ const GamePlay = () => {
     }
   };
 
-  const adjustTextByDifficulty = (text: string, type: 'title' | 'situation' | 'option') => {
+  const adjustTextByDifficulty = (
+    text: string,
+    type: 'title' | 'situation' | 'option'
+  ) => {
     console.log(`🔧 Adjusting ${type} for difficulty ${difficultyLevel}:`, text);
 
-    // 하(초급): 아주 짧고 쉬운 말 + "~요" 종결
+    // ===== 하 (초급) =====
     if (difficultyLevel === 'beginner') {
       if (type === 'title') {
-        // 제목이 길면 8자 정도로 잘라 체감 차이
+        // 제목이 길면 8자 정도로 잘라서 간단하게
         return text.replace(/(.{8}).*/, '$1');
       }
       if (type === 'situation') {
-        let s = text.replace(/[.?!].*$/,''); // 첫 문장만
+        // 첫 문장만 남기고 '~요' 체계로 단순화
+        let s = text.replace(/[.?!].*$/, '');
         if (!/^나는|^저는/.test(s)) s = '나는 ' + s;
         s = s.replace(/습니다|합니다/g, '해요');
         if (!/[.!?]$/.test(s)) s += '.';
         return s;
       }
-      // option: 쉬운 단어로 바꾸기
+      // 선택지: 쉬운 단어로 교체
       return text
         .replace(/선생님께 말씀드린다/g, '선생님께 말해요')
         .replace(/사과한다/g, '미안하다고 해요')
@@ -151,40 +155,43 @@ const GamePlay = () => {
         .replace(/무시한다/g, '모르는 척해요');
     }
 
-    // 중(중급): 한 문장 1인칭 + 아주 짧은 이유 토막
+    // ===== 중 (중급) =====
     if (difficultyLevel === 'intermediate') {
       if (type === 'situation') {
-        let s = text.replace(/[.?!].*$/,''); // 첫 문장만
+        // 1인칭 + 짧은 이유 붙여서 자연스러운 한 문장
+        let s = text.replace(/[.?!].*$/, '');
         if (!/^나는|^저는/.test(s)) s = '나는 ' + s;
-        s = (s + ' 그래서 이렇게 해요.').replace(/\.{2,}/g,'.');
+        s = (s + ' 그래서 이렇게 해요.').replace(/\.{2}/g, '.');
         return s;
       }
-      // option: 어미를 "~해요."로 통일
+      // 선택지: 어미를 "~해요."로 통일
       return text.replace(/다\.?$/, '해요.');
     }
 
-    // 상(상급): 구체적 행동 어투(메타 문장 금지)
+    // ===== 상 (상급) =====
     if (difficultyLevel === 'advanced') {
       if (type === 'situation') {
+        // 구체적 상황 묘사, 메타 문구 X
         let s = text.trim();
         if (!/^나는|^저는/.test(s)) s = '나는 ' + s;
         if (!/[.!?]$/.test(s)) s += '.';
         return s;
       }
-      // option: 구체화 사전(없으면 어미만 "한다."로 또렷하게)
-      const map: Array<[RegExp,string]> = [
+      // 선택지: 구체적 행동으로 강화
+      const map: Array<[RegExp, string]> = [
         [/선생님께 말한다/g, '상황을 확인한 뒤 담당 선생님께 정확히 보고한다'],
         [/사과한다/g, '진심으로 사과하고 재발 방지 약속을 한다'],
         [/도움을 준다/g, '상대방 입장을 이해하고 필요한 도움을 제공한다'],
-        [/기다린다/g, '질서 유지를 위해 순서를 지켜 기다린다'],
+        [/기다린다/g, '질서를 지키며 순서를 기다린다'],
       ];
       let out = text;
       for (const [re, rep] of map) out = out.replace(re, rep);
-      if (out === text) out = out.replace(/해요\.?$/, '한다.'); // 상급 어투 통일
+      // 치환이 하나도 안 되었으면, 어투만 상급스럽게 교정
+      if (out === text) out = out.replace(/해요\.?$/, '한다.');
       return out;
     }
 
-    // 기본(혹시 모를 안전장치)
+    // 안전장치
     return text;
   };
 
